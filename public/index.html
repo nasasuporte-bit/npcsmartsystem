@@ -1461,6 +1461,25 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
  @media(prefers-reduced-motion:reduce){.npc-view-enter,.npc-pay-rail span,.npc-trend span{animation:none}}
 }
 @media print{.npc-cash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.npc-pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}.npc-pay-card,.npc-ledger-row{display:flex;justify-content:space-between;gap:4px;padding:4px}.npc-pay-rail{display:none}}
+
+@media screen {
+  .auth-wrap,
+  :root[data-theme="light"] .auth-wrap,
+  :root[data-theme="ocean"] .auth-wrap {
+    background-image: linear-gradient(180deg, #03142119, #03142166), url("/fundo-login.webp");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  @media (max-width: 600px) {
+    .auth-wrap,
+    :root[data-theme="light"] .auth-wrap,
+    :root[data-theme="ocean"] .auth-wrap {
+      background-position: 64% center;
+    }
+  }
+}
 </style></head><body><div id="app"><section class="panel"><h1>NPC SMART</h1><p>Carregando sistema online…</p><noscript>Este navegador ou visualizador não executa JavaScript. Abra o endereço publicado no Chrome ou Safari.</noscript></section></div><dialog id="modal"><div class="dialog-head"><h2 id="modal-title"></h2><button type="button" data-close aria-label="Fechar janela">×</button></div><div id="modal-body" class="dialog-body"></div></dialog><div id="toast" class="hidden" role="status"></div><div id="print-root"></div><input id="import-file" class="hidden" type="file" accept=".json,application/json"><input id="csv-file" class="hidden" type="file" accept=".csv,text/csv"><script>'use strict';
 (() => {
 const ONLINE={"url":"https://fxdofioheljchztcidus.supabase.co","publishableKey":"sb_publishable_KzrPJW2wwbDE0qgelXGKig_Dj4rCeoI"};
