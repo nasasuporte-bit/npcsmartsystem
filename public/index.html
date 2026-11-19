@@ -2031,7 +2031,7 @@ const views={
   let list=data.sales.filter(s=>s.date>=from&&s.date<=to);
   const summary=Object.keys(methods).filter(m=>m!=='debt').map(m=>metric(methods[m],money(sum(data.ledger.filter(e=>e.date>=from&&e.date<=to&&e.method===m&&e.saleId).map(e=>e.amount))))).join('');
   let content='';
-  if(subtab==='sales')content='<div class="summary">'+metric('Vendas líquidas do período',money(sum(list.map(s=>s.total-s.cancelled))))+summary+'</div>'+table(['Venda','Data','Cliente','Forma de pagamento','Valor líquido','Em aberto',''],list.slice().reverse().map(s=>[String(s.number),date(s.date),esc(s.client.name),s.payments.map(p=>esc(methods[p.method])+': '+money(p.amount)).join('<br>'),money(s.total-s.cancelled),money(outstanding(s)),button('receipt','Comprovante',s.id,'small')]));
+  if(subtab==='sales')content='<div class="summary">'+metric('Vendas líquidas do período',money(sum(list.map(s=>s.total-s.cancelled))))+summary+'</div>'+table(['Venda','Data','Cliente','Forma de pagamento','Valor líquido','Em aberto',''],list.slice().reverse().map(s=>[String(s.number),date(s.date),esc(s.client.name),s.payments.map(p=>esc(methods[p.method])+': '+money(p.amount)).join('<br>'),money(s.total-s.cancelled),money(outstanding(s)),button('receipt','Ver cupom',s.id,'small')]));
   if(subtab==='products')content=views.products(true);
   if(subtab==='items')content=table(['Venda','Data','Produto','Qtde líquida','Total líquido'],list.flatMap(s=>s.lines.map(l=>[String(s.number),date(s.date),esc(l.name),number(l.qty-l.cancelQty),money(l.net-Math.floor(l.net*l.cancelQty/l.qty))])));
   if(subtab==='orders')content=table(['OS','Entrada','Cliente','Aparelho','Situação','Total',''],data.orders.filter(o=>o.opened>=from&&o.opened<=to).map(o=>[esc(o.number),date(o.opened),esc(o.client.name),esc(o.device),badge(o.status),money(orderTotal(o)),button('edit-order','Abrir',o.id,'small')]));
@@ -2200,9 +2200,12 @@ function printOrder(orderId){
  const html=companyHeader('Ordem de Serviço '+o.number)+info+block('Defeito relatado',o.defect)+block('Serviço executado / diagnóstico',o.service)+lines+(o.partsNote?block('Peças e observações',o.partsNote):'')+'<div class="print-grid"><p>Mão de obra adicional <b>'+money(o.labor)+'</b></p><p>Desconto '+money(o.discount)+'<br>Acréscimo '+money(o.surcharge)+'</p></div><div class="totals">Total <strong>'+money(orderTotal(o))+'</strong></div>'+block('Termo de garantia personalizado',o.warranty)+tracking+'<p class="print-note">OS '+esc(o.number)+' · Emitida em '+new Date().toLocaleString('pt-BR')+'</p>';
  printDocument('OS-'+o.number,html);
 }
+function saleReceiptMarkup(s){
+ return companyHeader('Cupom da venda '+s.number,date(s.date))+'<p><b>Cliente</b> '+esc(s.client.name)+'</p>'+(s.deviceSale&&session?.role==='admin'?'<p><b>IMEI</b> '+esc(s.deviceSale.imei)+'</p>'+(s.deviceSale.address?'<p><b>Endereço</b> '+esc(s.deviceSale.address)+'</p>':'')+(s.deviceSale.notes?'<p class="preline">'+esc(s.deviceSale.notes)+'</p>':'')+(s.deviceSale.installments.length?table(['Parcela','Vencimento','Valor'],s.deviceSale.installments.map(p=>[String(p.number),date(p.due),money(p.amount)])):''):'')+table(['Item','Qtde.','Unitário','Total líquido'],s.lines.map(l=>[esc(l.name),number(l.qty-l.cancelQty),money(l.price),money(l.net-Math.floor(l.net*l.cancelQty/l.qty))]))+'<div class="totals">Total líquido <strong>'+money(s.total-s.cancelled)+'</strong></div>'+table(['Forma','Data','Valor'],s.payments.map(p=>[methods[p.method],date(p.date),money(p.amount)]))+(s.refunds.length?'<h3>Estornos</h3>'+table(['Forma','Valor'],s.refunds.map(p=>[methods[p.method],money(p.amount)])):'')+'<p>Saldo em aberto '+money(outstanding(s))+'</p>';
+}
 function receipt(saleId){
- const s=data.sales.find(x=>x.id===saleId);if(!s)fail('Venda não encontrada.');
- printDocument('Venda-'+s.number,companyHeader('Comprovante de venda '+s.number,date(s.date))+'<p><b>Cliente</b> '+esc(s.client.name)+'</p>'+(s.deviceSale&&session?.role==='admin'?'<p><b>IMEI</b> '+esc(s.deviceSale.imei)+'</p>'+(s.deviceSale.address?'<p><b>Endereço</b> '+esc(s.deviceSale.address)+'</p>':'')+(s.deviceSale.notes?'<p class="preline">'+esc(s.deviceSale.notes)+'</p>':'')+(s.deviceSale.installments.length?table(['Parcela','Vencimento','Valor'],s.deviceSale.installments.map(p=>[String(p.number),date(p.due),money(p.amount)])):''):'')+table(['Item','Qtde.','Unitário','Total líquido'],s.lines.map(l=>[esc(l.name),number(l.qty-l.cancelQty),money(l.price),money(l.net-Math.floor(l.net*l.cancelQty/l.qty))]))+'<div class="totals">Total líquido <strong>'+money(s.total-s.cancelled)+'</strong></div>'+table(['Forma','Data','Valor'],s.payments.map(p=>[methods[p.method],date(p.date),money(p.amount)]))+(s.refunds.length?'<h3>Estornos</h3>'+table(['Forma','Valor'],s.refunds.map(p=>[methods[p.method],money(p.amount)])):'')+'<p>Saldo em aberto '+money(outstanding(s))+'</p>');
+ const sale=data.sales.find(s=>s.id===saleId);if(!sale)fail('Venda não encontrada.');
+ openDialog('Cupom da venda',saleReceiptMarkup(sale)+'<div class="actions">'+button('close','Fechar')+button('print-receipt','Imprimir cupom',sale.id,'primary')+'</div>');
 }
 const deviceConditions={new:'Novo',used:'Seminovo'};
 const deviceMethods=()=>Object.entries(methods).filter(([key])=>['pix','cash','debit','credit'].includes(key));
@@ -2299,7 +2302,7 @@ function deviceSaleDetails(saleId){
  });
  openDialog('Venda de aparelho '+s.number,overview+
   (rows.length?table(['Parcela','Vencimento','Valor','Situação',''],rows):'')+
-  '<div class="actions">'+button('receipt','Imprimir comprovante',s.id)+button('close','Fechar')+'</div>');
+  '<div class="actions">'+button('receipt','Ver cupom',s.id)+button('close','Fechar')+'</div>');
 }
 function deviceReceiveDialog(key){
  admin();
@@ -2419,6 +2422,10 @@ const actions={
   csv([['Venda','Data','Cliente','Forma','Tipo de lançamento','Valor (R$)'],...data.sales.flatMap(s=>s.payments.filter(p=>p.date>=from&&p.date<=to).map(p=>[s.number,p.date,s.client.name,methods[p.method],p.kind==='initial'?'Pagamento inicial':'Recebimento',dec(p.amount)])),...data.sales.flatMap(s=>s.refunds.filter(p=>p.date>=from&&p.date<=to).map(p=>[s.number,p.date,s.client.name,methods[p.method],'Estorno',dec(-p.amount)]))],'pagamentos-'+today()+'.csv');
  },
  receipt(el){receipt(el.dataset.id);},
+ 'print-receipt'(el){
+  const sale=data.sales.find(s=>s.id===el.dataset.id);if(!sale)fail('Venda não encontrada.');
+  printDocument('Venda-'+sale.number,saleReceiptMarkup(sale));
+ },
  'cancel-sale'(el){requireFeature('cancellations');cancelDialog(el.dataset.id);},
  'cancel-all'(){
   const sale=data.sales.find(s=>s.id===dialogState.saleId);
@@ -2449,17 +2456,16 @@ const submits={
    if(down>=total)fail('A entrada deve ser menor que o valor total para parcelar.');
    parcels=makeDeviceInstallments(total-down,Number(read('count')),first);
   }
-  let saleNumber;
-  await transaction((db,user)=>{
+  const saleId=await transaction((db,user)=>{
    admin(user);
    const client=clientSnapshot(db,clientId);
    if(clientId&&!client.id)fail('Este cliente não está mais cadastrado.');
    const payments=[...(down>0?[{method,amount:down}]:[]),...(financed?[{method:'debt',amount:total-down}]:[])];
    const sale=recordSale(db,user,{client,payments,cashShift:selectedShift(db),lines:[{custom:true,name:model+' · '+color+' · '+deviceConditions[condition],qty:1,price:total}],discount:0,surcharge:0});
    sale.deviceSale={model,color,condition,imei,notes,address,installments:parcels};
-   saleNumber=sale.number;
+   return sale.id;
   });
-  closeDialog();renderMain();toast('Venda de aparelho '+saleNumber+' registrada.');
+  closeDialog();renderMain();toast('Venda de aparelho registrada.');receipt(saleId);
  },
  async 'device-receive'(form){
   admin();
@@ -2522,8 +2528,7 @@ const submits={
   if(!state.orderId&&!/^\d{4}-\d{2}-\d{2}$/.test(saleDate))fail('Informe uma data válida para a venda.');
   if(!state.orderId&&saleDate>today())fail('A data da venda não pode ser futura.');
   const details={lines:clone(state.lines),client:null,discount:cents(form.elements.discount.value),surcharge:cents(form.elements.surcharge.value),payments:state.pays.filter(p=>p.amount>0).map(p=>({...p})),orderId:state.orderId||'',saleDate};
-  let saleNumber;
-  await transaction((db,user)=>{
+  const saleId=await transaction((db,user)=>{
    let order;
    if(state.orderId){
     order=db.orders.find(o=>o.id===state.orderId);version(order,state.orderVersion);
@@ -2531,11 +2536,12 @@ const submits={
     if(order.status==='Cancelado')fail('A OS foi cancelada.');
     details.client=clone(order.client);
    }else details.client=clientSnapshot(db,form.elements.clientId.value);
-   const sale=recordSale(db,user,details);saleNumber=sale.number;
+   const sale=recordSale(db,user,details);
    if(order){order.saleId=sale.id;order.version++;order.updatedAt=now();}
+   return sale.id;
   });
   if(!state.orderId)cart=[];
-  closeDialog();renderMain();toast('Venda '+saleNumber+' registrada. Pagamentos salvos no caixa.');
+  closeDialog();renderMain();toast('Venda registrada.');receipt(saleId);
  },
  async 'cash-move'(form){
   requireFeature('cash');

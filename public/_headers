@@ -4,4 +4,4 @@
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'self'; script-src 'sha256-Qncw7+zipsgGpBqGR5JEbl+Jjv9prmUgA5i6RCCNz2c='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src https://fxdofioheljchztcidus.supabase.co; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'sha256-jMOWcBx8n3rrASza2OTH6UO/qI0b5Opm0ocv4EbW9+Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src https://fxdofioheljchztcidus.supabase.co; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'
