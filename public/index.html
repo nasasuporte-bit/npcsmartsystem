@@ -2033,9 +2033,19 @@ function closedCashSource(db,sourceId){
  if(!source)fail('Selecione um caixa fechado válido.');
  return source;
 }
+function withdrawalDateField(value=today()){
+ return field('withdrawalDate','Data da retirada',value,'date','required max="'+today()+'"');
+}
+function readWithdrawalDate(formValues){
+ const value=String(formValues.get('withdrawalDate')||'');
+ const parsed=new Date(value+'T12:00:00Z');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==value)fail('Informe uma data válida para a retirada.');
+ if(value>today())fail('A data da retirada não pode ser futura.');
+ return value;
+}
 function moveDialog(kind){
  const title={open:'Abrir caixa',in:'Adicionar ao caixa',out:'Sangria do caixa aberto',carryover:'Sangria de caixa fechado',expense:'Registrar despesa'}[kind];
- openDialog(title,'<form data-form="cash-move">'+(kind==='carryover'?closedCashField():'')+field('amount',kind==='open'?'Fundo inicial em dinheiro (R$)':'Valor (R$)','0,00','text','inputmode="decimal" required')+(kind==='open'?'':select('method','Forma',Object.entries(methods).filter(([m])=>m!=='debt'&&m!=='other'),'cash'))+field('description','Origem / descrição',kind==='open'?'Abertura de caixa':'','text','required maxlength="300"')+area('note','Observações','')+buttonsSave('Confirmar')+'</form>',{kind});
+ openDialog(title,'<form data-form="cash-move">'+(kind==='carryover'?closedCashField()+withdrawalDateField():'')+field('amount',kind==='open'?'Fundo inicial em dinheiro (R$)':'Valor (R$)','0,00','text','inputmode="decimal" required')+(kind==='open'?'':select('method','Forma',Object.entries(methods).filter(([m])=>m!=='debt'&&m!=='other'),'cash'))+field('description','Origem / descrição',kind==='open'?'Abertura de caixa':'','text','required maxlength="300"')+area('note','Observações','')+buttonsSave('Confirmar')+'</form>',{kind});
 }
 function receiveDialog(saleId){
  const sale=data.sales.find(s=>s.id===saleId);if(!sale)fail('Venda não encontrada.');
@@ -2259,6 +2269,7 @@ const submits={
   const values=new FormData(form),kind=dialogState.kind,amount=cents(values.get('amount'));
   const description=String(values.get('description')||'').trim();if(!description)fail('Informe a origem ou descrição.');
   if(kind!=='open'&&!amount)fail('Informe um valor maior que zero.');
+  const withdrawalDate=kind==='carryover'?readWithdrawalDate(values):today();
   await transaction((db,user)=>{
    let shift;
    if(kind==='open'){
@@ -2268,7 +2279,7 @@ const submits={
    else shift=requireShift(db);
    const method=kind==='open'?'cash':String(values.get('method'));
    if(!Object.hasOwn(methods,method)||method==='debt'||method==='other')fail('Selecione uma forma válida.');
-   ledger(db,shift,method,(['out','carryover','expense'].includes(kind)?-1:1)*amount,description,{kind:kind==='carryover'?'out':kind,carryover:kind==='carryover',note:String(values.get('note')||'')});
+   ledger(db,shift,method,(['out','carryover','expense'].includes(kind)?-1:1)*amount,description,{kind:kind==='carryover'?'out':kind,carryover:kind==='carryover',date:withdrawalDate,note:String(values.get('note')||'')});
   });closeDialog();renderMain();toast(kind==='open'?'Caixa aberto.':'Movimentação registrada.');
  },
  async receive(form){
@@ -2465,10 +2476,38 @@ submits['reclassify-cash']=async form=>{
  });
  closeDialog();renderMain();toast('Sangria transferida para o caixa de origem.');
 };
-function carryoverSummary(entries){
+actions['edit-carryover-date']=el=>{
+ requireFeature('cash');
+ const entry=data.ledger.find(e=>e.id===el.dataset.id&&e.carryover);
+ if(!entry)fail('Sangria não encontrada.');
+ const summary=dialogState;
+ openDialog('Corrigir data da retirada','<form data-form="edit-carryover-date"><p>'+esc(entry.description)+' · '+money(-entry.amount)+'</p>'+withdrawalDateField(entry.date)+buttonsSave('Salvar data')+'</form>',{entryId:entry.id,originalDate:entry.date,summary});
+};
+submits['edit-carryover-date']=async form=>{
+ requireFeature('cash');
+ const {entryId,originalDate,summary}=dialogState;
+ const withdrawalDate=readWithdrawalDate(new FormData(form));
+ await transaction(db=>{
+  const entry=db.ledger.find(e=>e.id===entryId&&e.carryover);
+  if(!entry||entry.date!==originalDate)fail('O lançamento mudou. Atualize e confira antes de salvar.');
+  entry.date=withdrawalDate;
+ });
+ closeDialog();renderMain();
+ const {shiftId,from,to}=summary;
+ const outsidePeriod=!shiftId&&(withdrawalDate<from||withdrawalDate>to);
+ if(outsidePeriod)filters.cashFrom=filters.cashTo=withdrawalDate;
+ cashSummaryDialog(shiftId,outsidePeriod?withdrawalDate:from,outsidePeriod?withdrawalDate:to,'carryover');
+ toast('Data da retirada atualizada.');
+};
+function carryoverSummary(entries,interactive=false){
  const shifts=new Map(data.shifts.map(s=>[s.id,s]));
- const rows=entries.filter(e=>e.carryover).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
- return '<h3>Sangrias de caixas fechados</h3><div class="summary">'+metric('Total retirado',money(-sum(rows.map(e=>e.amount))))+'</div>'+table(['Data da retirada','Caixa de origem','Descrição','Forma','Valor'],rows.map(e=>[date(e.date),esc(String(shifts.get(e.shiftId)?.number??'—')),esc(e.description),methods[e.method],money(-e.amount)]));
+ const rows=entries.filter(e=>e.carryover).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
+ const headers=['Data da retirada','Registrada em','Caixa de origem','Descrição','Forma','Valor'];
+ if(interactive)headers.push('Ações');
+ return '<h3>Sangrias de caixas fechados</h3><div class="summary">'+metric('Total retirado',money(-sum(rows.map(e=>e.amount))))+'</div>'+table(headers,rows.map(e=>[
+  date(e.date),date(e.createdAt),esc(String(shifts.get(e.shiftId)?.number??'—')),esc(e.description),esc(methods[e.method]),money(-e.amount),
+  ...(interactive?[button('edit-carryover-date','Corrigir data',e.id,'small')]:[])
+ ]));
 }
 function cashEntryGroup(entry){
  if(entry.carryover)return 'carryover';
@@ -2545,7 +2584,7 @@ function cashSummaryDialog(shiftId='',from=filters.cashFrom||today(),to=filters.
  const entries=summaryEntries(shiftId,from,to);
  openDialog(shift?'Resumo do caixa '+shift.number:'Resumo do caixa por período',
   (shift?'':'<div class="grid">'+field('from','Data inicial',from,'date','data-summary-date="from"')+field('to','Data final',to,'date','data-summary-date="to"')+'</div>')+
-  '<div class="toolbar" style="margin-top:14px">'+button('cash-summary-view','Movimentações','balance',view==='balance'?'primary':'')+button('cash-summary-view','Sangrias de caixas fechados','carryover',view==='carryover'?'primary':'')+'</div><div>'+(view==='carryover'?carryoverSummary(entries):cashSummaryMarkup(entries,true,payment))+'</div><div class="actions">'+button('close','Fechar')+button('print-cash-summary','Imprimir / PDF')+'</div>',
+  '<div class="toolbar" style="margin-top:14px">'+button('cash-summary-view','Movimentações','balance',view==='balance'?'primary':'')+button('cash-summary-view','Sangrias de caixas fechados','carryover',view==='carryover'?'primary':'')+'</div><div>'+(view==='carryover'?carryoverSummary(entries,true):cashSummaryMarkup(entries,true,payment))+'</div><div class="actions">'+button('close','Fechar')+button('print-cash-summary','Imprimir / PDF')+'</div>',
   {type:'cash-summary',shiftId,from,to,view,payment});
 }
 actions['cash-summary']=()=>{requireFeature('cash');cashSummaryDialog();};
