@@ -1890,13 +1890,15 @@ const views={
  cash(){
   const shift=selectedShift(data);
   const records=shift?data.ledger.filter(e=>e.shiftId===shift.id&&!e.carryover):[];
+  const currentDate=today();
+  const closedWithdrawals=data.ledger.filter(e=>e.carryover&&e.date===currentDate);
   const entryCounts=new Map();
   for(const e of data.ledger)entryCounts.set(e.shiftId,(entryCounts.get(e.shiftId)||0)+1);
   const historical=data.shifts.filter(s=>s.historical&&s.closedAt&&!s.unopenedSales).slice().sort((a,b)=>b.legacyDate.localeCompare(a.legacyDate));
   const unopened=data.shifts.filter(s=>s.unopenedSales&&s.closedAt).slice().sort((a,b)=>b.legacyDate.localeCompare(a.legacyDate));
   const cashHistory=closedCashShifts(data);
   const historyLimit=filters.cashHistoryLimit||30;
-  return '<div class="toolbar">'+(shift?button('close-shift','Fechar caixa','','danger')+button('cash-in','(+) Adição')+button('cash-out','(−) Sangria do caixa aberto')+button('cash-expense','(−) Despesa'):button('open-shift','Abrir caixa','','primary'))+ (cashHistory.length?button('cash-out-closed','(−) Sangria de caixa fechado'):'')+button('cash-summary','Resumo por período')+button('import-cash-history','Importar histórico MDB (CSV)')+button('export-cash-history','Exportar caixa CSV')+'</div><div class="npc-hero"><div><p>'+(shift?'Caixa aberto · '+esc(date(shift.openedAt)):'Caixa fechado')+'</p><strong>'+money(sum(records.map(e=>e.amount)))+'</strong><p>Total dos movimentos do caixa aberto</p></div>'+button('cash-summary','Consultar outro período','','primary')+'</div>'+cashSummaryMarkup(records,true,filters.cashMethod||'','current')+'<div class="panel"><h3 class="panel-title">Caixas anteriores</h3>'+table(['Caixa','Abertura','Fechamento','Operador',''],cashHistory.map(s=>[String(s.number),new Date(s.openedAt).toLocaleString('pt-BR'),new Date(s.closedAt).toLocaleString('pt-BR'),esc(s.closedBy),button('cash-history','Ver resumo',s.id,'small')]))+'</div><div class="panel"><h3 class="panel-title">Vendas registradas sem abertura</h3><p class="help">Vendas e estornos feitos sem abertura ficam agrupados por data e aparecem no Resumo por período. Eles não alteram o saldo físico de um caixa aberto.</p>'+table(['Data','Lançamentos',''],unopened.map(s=>[date(s.legacyDate),number(entryCounts.get(s.id)||0),button('cash-history','Ver resumo',s.id,'small')]))+'</div><div class="panel"><h3 class="panel-title">Histórico importado do MDB — desde jan/2025</h3><p class="help">Os lançamentos importados aparecem também no Resumo por período. Reimportar o mesmo arquivo não duplica os movimentos.</p>'+table(['Data','Lançamentos','Operador',''],historical.slice(0,historyLimit).map(s=>[date(s.legacyDate),number(entryCounts.get(s.id)||0),esc('Sistema antigo'),button('cash-history','Ver resumo',s.id,'small')]))+(historical.length>historyLimit?button('more-cash-history','Mostrar mais dias'):'')+'</div>';
+  return '<div class="toolbar">'+(shift?button('close-shift','Fechar caixa','','danger')+button('cash-in','(+) Adição')+button('cash-out','(−) Sangria do caixa aberto')+button('cash-expense','(−) Despesa'):button('open-shift','Abrir caixa','','primary'))+ (cashHistory.length?button('cash-out-closed','(−) Sangria de caixa fechado'):'')+button('cash-summary','Resumo por período')+button('import-cash-history','Importar histórico MDB (CSV)')+button('export-cash-history','Exportar caixa CSV')+'</div><div class="npc-hero"><div><p>'+(shift?'Caixa aberto · '+esc(date(shift.openedAt)):'Caixa fechado')+'</p><strong>'+money(sum(records.map(e=>e.amount)))+'</strong><p>Total dos movimentos do caixa aberto</p></div>'+button('cash-summary','Consultar outro período','','primary')+'</div>'+cashSummaryMarkup([...records,...closedWithdrawals],true,filters.cashMethod||'','current')+'<div class="panel"><h3 class="panel-title">Caixas anteriores</h3>'+table(['Caixa','Abertura','Fechamento','Operador',''],cashHistory.map(s=>[String(s.number),new Date(s.openedAt).toLocaleString('pt-BR'),new Date(s.closedAt).toLocaleString('pt-BR'),esc(s.closedBy),button('cash-history','Ver resumo',s.id,'small')]))+'</div><div class="panel"><h3 class="panel-title">Vendas registradas sem abertura</h3><p class="help">Vendas e estornos feitos sem abertura ficam agrupados por data e aparecem no Resumo por período. Eles não alteram o saldo físico de um caixa aberto.</p>'+table(['Data','Lançamentos',''],unopened.map(s=>[date(s.legacyDate),number(entryCounts.get(s.id)||0),button('cash-history','Ver resumo',s.id,'small')]))+'</div><div class="panel"><h3 class="panel-title">Histórico importado do MDB — desde jan/2025</h3><p class="help">Os lançamentos importados aparecem também no Resumo por período. Reimportar o mesmo arquivo não duplica os movimentos.</p>'+table(['Data','Lançamentos','Operador',''],historical.slice(0,historyLimit).map(s=>[date(s.legacyDate),number(entryCounts.get(s.id)||0),esc('Sistema antigo'),button('cash-history','Ver resumo',s.id,'small')]))+(historical.length>historyLimit?button('more-cash-history','Mostrar mais dias'):'')+'</div>';
  },
  receivables(){
   const rows=data.sales.filter(s=>outstanding(s)>0&&match({...s,clientName:s.client.name},['number','clientName'],query()));
@@ -2524,6 +2526,7 @@ const cashPaymentColors={cash:'#83b9f6',pix:'#53cdb0',debit:'#eab976',credit:'#a
 const cashPaymentKeys=Object.keys(cashPaymentColors);
 function cashSummaryMarkup(entries,interactive=false,methodFilter='',scope='period'){
  const rows=entries.filter(e=>!e.carryover);
+ const closedWithdrawals=sum(entries.filter(e=>e.carryover).map(e=>e.amount));
  const canMove=interactive&&data.shifts.some(s=>s.closedAt&&!s.historical);
  const groupTotals=new Map(),salesTotals=new Map();
  const groups=[['sales','Vendas recebidas'],['refund','Estornos lançados'],['opening','Abertura'],['addition','Adições'],['receipt','Contas a receber'],['withdrawal','Sangrias do caixa'],['expense','Despesas'],['bills','Contas pagas'],['other','Outros movimentos']];
@@ -2535,8 +2538,9 @@ function cashSummaryMarkup(entries,interactive=false,methodFilter='',scope='peri
  const salesTotal=groupTotals.get('sales')||0;
  const clear=interactive&&methodFilter?button('cash-filter-payment','Mostrar todos',scope+':all','small'):'';
  const ledgerSummary=[...groups,['net','Total dos movimentos']].map(([key,label])=>{
-  const amount=key==='net'?sum(rows.map(row=>row.amount)):groupTotals.get(key)||0;
-  return '<div class="npc-ledger-row"><span>'+label+'</span><strong class="'+(amount<0?'error':'')+'">'+money(amount)+'</strong></div>';
+  const amount=key==='net'?sum(rows.map(row=>row.amount)):(groupTotals.get(key)||0)+(key==='withdrawal'?closedWithdrawals:0);
+  const detail=key==='withdrawal'&&closedWithdrawals?'<br><small>De caixas fechados'+(scope==='current'?' hoje':'')+' · '+money(closedWithdrawals)+'</small>':'';
+  return '<div class="npc-ledger-row"><span>'+label+detail+'</span><strong class="'+(amount<0?'error':'')+'">'+money(amount)+'</strong></div>';
  }).join('');
  const cards=cashPaymentKeys.map(key=>{
   const color=cashPaymentColors[key], content='<span>'+esc(methods[key])+'</span><strong>'+money(salesTotals.get(key)||0)+'</strong>';
