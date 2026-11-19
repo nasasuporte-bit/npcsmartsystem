@@ -1480,6 +1480,7 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
     }
   }
 }
+[data-device-plan][hidden]{display:none}
 </style></head><body><div id="app"><section class="panel"><h1>NPC SMART</h1><p>Carregando sistema online…</p><noscript>Este navegador ou visualizador não executa JavaScript. Abra o endereço publicado no Chrome ou Safari.</noscript></section></div><dialog id="modal"><div class="dialog-head"><h2 id="modal-title"></h2><button type="button" data-close aria-label="Fechar janela">×</button></div><div id="modal-body" class="dialog-body"></div></dialog><div id="toast" class="hidden" role="status"></div><div id="print-root"></div><input id="import-file" class="hidden" type="file" accept=".json,application/json"><input id="csv-file" class="hidden" type="file" accept=".csv,text/csv"><script>'use strict';
 (() => {
 const ONLINE={"url":"https://fxdofioheljchztcidus.supabase.co","publishableKey":"sb_publishable_KzrPJW2wwbDE0qgelXGKig_Dj4rCeoI"};
@@ -1497,7 +1498,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const sum=values=>values.reduce((a,b)=>a+b,0);
 const methods={cash:'Dinheiro',pix:'Pix',debit:'Cartão de débito',credit:'Cartão de crédito',other:'Cheque / outras (histórico)',debt:'Fiado'};
 const states=['Recebido','Em diagnóstico','Aguardando aprovação','Aguardando peça','Em reparo','Pronto','Entregue','Cancelado'];
-const nav=[['home','⌂','Início'],['products','📦','Produtos'],['sales','🛒','Vendas'],['clients','👤','Clientes'],['queries','🔍','Consultas'],['cash','💵','Caixa'],['cancellations','🚫','Canc. Venda'],['charts','📊','Gráficos'],['orders','🔧','OS'],['labels','🏷','Etiquetas'],['settings','⚙','Ajustes']];
+const nav=[['home','⌂','Início'],['products','📦','Produtos'],['sales','🛒','Vendas'],['devices','▣','Venda de aparelho'],['clients','👤','Clientes'],['queries','🔍','Consultas'],['cash','💵','Caixa'],['cancellations','🚫','Canc. Venda'],['charts','📊','Gráficos'],['orders','🔧','OS'],['labels','🏷','Etiquetas'],['settings','⚙','Ajustes']];
 let data,session=null,tab='home',subtab='sales',filters={},cart=[],selectedLabels=new Set(),toastTimer,stockShown=false;
 let dialogState=null;
 const THEME_KEY='npcsmart.offline.theme.v1';
@@ -1684,7 +1685,7 @@ async function restoreWorkspace(imported){
 }
 
 function admin(user=session){if(user?.role!=='admin')fail('Esta ação é exclusiva do administrador.');}
-function requireFeature(feature,user=session){if(user&&(feature==='home'||user.role==='admin'))return;if(!user?.permissions?.[feature])fail('Este acesso não tem permissão para usar esta seção. Peça ao administrador para liberar o acesso.');}
+function requireFeature(feature,user=session){if(user&&(feature==='home'||user.role==='admin'))return;if(feature==='devices'||!user?.permissions?.[feature])fail('Este acesso não tem permissão para usar esta seção. Peça ao administrador para liberar o acesso.');}
 function version(row,expected){if(!row||row.version!==expected)fail('Este registro mudou em outra janela. Consulte-o novamente antes de salvar.');}
 function selectedShift(db){return db.shifts.find(x=>!x.closedAt);}
 function requireShift(db){const shift=selectedShift(db);if(!shift)fail('Abra o caixa na aba Caixa antes de registrar o pagamento.');return shift;}
@@ -1723,7 +1724,7 @@ function allocate(total,weights){
 }
 function recordSale(db,user,details){
  const saleDate=details.saleDate||today();
- const shift=shiftForSaleDate(db,saleDate);
+ const shift=details.cashShift||shiftForSaleDate(db,saleDate);
  if(!details.lines.length)fail('Adicione um item à venda.');
  let gross=0;
  const lines=details.lines.map(line=>{
@@ -1827,7 +1828,7 @@ function authFormError(error){
 
 function render(){
  if(!session){renderAuth();return;}
- const visibleNav=nav.filter(([key])=>key==='home'||session.platformAdmin||session.role==='admin'&&key==='settings'||session.permissions?.[key]);
+ const visibleNav=nav.filter(([key])=>key==='devices'?session.role==='admin':key==='home'||session.platformAdmin||session.role==='admin'&&key==='settings'||session.permissions?.[key]);
  if(!visibleNav.some(([key])=>key===tab))tab=visibleNav.find(([key])=>key!=='settings')?.[0]||'settings';
  $('#app').innerHTML='<header class="topbar"><div class="brand">'+esc(data.company.name)+'<small>Estoque, vendas e assistência</small></div><div class="top-actions"><span class="user">Operador <b>'+esc(session.name)+'</b></span>'+button('refresh-online','Atualizar')+button('lock','Bloquear')+button('logout','Sair','','danger')+'</div></header><nav class="nav" aria-label="Menu principal">'+visibleNav.map(([key,icon,title])=>'<button type="button" data-action="nav" data-id="'+key+'" class="'+(tab===key?'active':'')+'" aria-current="'+(tab===key?'page':'false')+'"><span class="icon" aria-hidden="true">'+icon+'</span>'+title+'</button>').join('')+'</nav><main id="main"></main><footer class="statusbar"><span>Dados online · '+esc(session.role==='admin'?'Administrador':'Vendedor com acesso limitado')+'</span><span>'+(data.demo?'Cadastros iniciais de demonstração · ':'')+'Última gravação '+new Date(data.updatedAt).toLocaleString('pt-BR')+'</span></footer>';
  renderMain();
@@ -1835,7 +1836,7 @@ function render(){
 function renderMain(restore=null){
  requireFeature(tab);
  const title=nav.find(n=>n[0]===tab)?.[2]||'NPC SMART';
- const extra=tab==='orders'?button('new-order','Nova OS','','primary'):['products','clients'].includes(tab)?button('new-record','Cadastrar','','primary'):'';
+ const extra=tab==='devices'?button('device-new','Nova venda de aparelho','','primary'):tab==='orders'?button('new-order','Nova OS','','primary'):['products','clients'].includes(tab)?button('new-record','Cadastrar','','primary'):'';
  $('#main').innerHTML='<div class="section-head"><h2>'+esc(tab==='orders'?'Ordens de Serviço':title)+'</h2>'+extra+'</div>'+views[tab]();
  if(restore){const target=$('[data-filter="'+restore.key+'"]');target?.focus();if(target&&typeof target.setSelectionRange==='function')target.setSelectionRange(restore.pos,restore.pos);}
 }
@@ -1862,11 +1863,12 @@ function homeDashboard(){
  const total=sum(series.map(([,value])=>value));
  const activeOrders=seesOrders?data.orders.filter(order=>!['Entregue','Cancelado'].includes(order.status)).length:0;
  const links=[canSeeDashboardModule('sales')?button('nav','Vendas','sales','primary'):'',seesOrders?button('nav','Ordens de serviço','orders'):'',seesCash?button('nav','Caixa','cash'):''].join('');
- return '<div class="npc-hero"><div><h3>Visão geral</h3><p>'+esc(date(today()))+'</p></div><div class="toolbar">'+links+'</div></div>'+
+ return '<div class="npc-hero"><div><h3>Visão geral</h3><p>'+esc(date(today()))+'</p></div><div class="toolbar">'+links+'</div></div>'+deviceDueAlerts()+
   (seesCash?'<section class="panel"><div class="npc-section-head"><h3>Recebimentos de vendas</h3><div class="toolbar">'+[[1,'Hoje'],[7,'7 dias'],[30,'30 dias']].map(([n,label])=>button('home-period',label,String(n),days===n?'primary':'')).join('')+'</div></div><div class="summary">'+metric('Vendas recebidas',money(total))+metric('Caixa atual',selectedShift(data)?'Aberto':'Fechado')+(seesOrders?metric('OS em andamento',number(activeOrders)):'')+'</div><div class="npc-trend" role="group" aria-label="Recebimentos diários">'+series.map(([day,value])=>'<span role="img" aria-label="'+esc(date(day)+' '+money(value))+'" title="'+esc(date(day)+' · '+money(value))+'" style="--height:'+Math.max(1,Math.round(100*value/maximum))+'%"></span>').join('')+'</div></section>':seesOrders?'<div class="summary">'+metric('OS em andamento',number(activeOrders))+'</div>':'');
 }
 const views={
  home:homeDashboard,
+ devices:deviceSalesView,
  products(readOnly=false){
   const rows=data.products.filter(p=>match(p,['sku','barcode','name','brand'],query()));
   return '<div class="toolbar">'+searchBox('products','Buscar por código, barras, produto ou marca')+button('export-products','Exportar CSV')+'</div>'+table(['Código','Produto','Tipo','Marca','Estoque','Mínimo','Compra','Venda',...(readOnly?[]:['Ações'])],rows.map(p=>[esc(p.sku),esc(p.name),p.type==='service'?'Serviço':'Produto',esc(p.brand),p.type==='service'?'—':number(p.qty),number(p.min),money(p.cost),money(p.price),...(readOnly?[]:[button('edit-record','Alterar',p.id,'small')+' '+button('delete-record','Excluir',p.id,'small danger')])]))+'<p class="help">Serviços não consomem estoque. As vendas conferem a quantidade disponível ao finalizar.</p>';
@@ -2051,6 +2053,7 @@ function moveDialog(kind){
 }
 function receiveDialog(saleId){
  const sale=data.sales.find(s=>s.id===saleId);if(!sale)fail('Venda não encontrada.');
+ if(sale.deviceSale){deviceSaleDetails(sale.id);return;}
  openDialog('Receber — venda '+sale.number,'<form data-form="receive"><p>Cliente <b>'+esc(sale.client.name)+'</b></p><p>Saldo em aberto <b>'+money(outstanding(sale))+'</b></p><div class="grid">'+field('amount','Valor recebido (R$)',dec(outstanding(sale)),'text','required inputmode="decimal"')+select('method','Forma recebida',Object.entries(methods).filter(([m])=>m!=='debt'&&m!=='other'),'pix')+'</div>'+buttonsSave('Registrar recebimento')+'</form>',{saleId,version:sale.version});
 }
 function billDialog(){
@@ -2085,9 +2088,118 @@ function printOrder(orderId){
 }
 function receipt(saleId){
  const s=data.sales.find(x=>x.id===saleId);if(!s)fail('Venda não encontrada.');
- printDocument('Venda-'+s.number,companyHeader('Comprovante de venda '+s.number,date(s.date))+'<p><b>Cliente</b> '+esc(s.client.name)+'</p>'+table(['Item','Qtde.','Unitário','Total líquido'],s.lines.map(l=>[esc(l.name),number(l.qty-l.cancelQty),money(l.price),money(l.net-Math.floor(l.net*l.cancelQty/l.qty))]))+'<div class="totals">Total líquido <strong>'+money(s.total-s.cancelled)+'</strong></div>'+table(['Forma','Data','Valor'],s.payments.map(p=>[methods[p.method],date(p.date),money(p.amount)]))+(s.refunds.length?'<h3>Estornos</h3>'+table(['Forma','Valor'],s.refunds.map(p=>[methods[p.method],money(p.amount)])):'')+'<p>Saldo em aberto '+money(outstanding(s))+'</p>');
+ printDocument('Venda-'+s.number,companyHeader('Comprovante de venda '+s.number,date(s.date))+'<p><b>Cliente</b> '+esc(s.client.name)+'</p>'+(s.deviceSale&&session?.role==='admin'?'<p><b>IMEI</b> '+esc(s.deviceSale.imei)+'</p>'+(s.deviceSale.address?'<p><b>Endereço</b> '+esc(s.deviceSale.address)+'</p>':'')+(s.deviceSale.notes?'<p class="preline">'+esc(s.deviceSale.notes)+'</p>':'')+(s.deviceSale.installments.length?table(['Parcela','Vencimento','Valor'],s.deviceSale.installments.map(p=>[String(p.number),date(p.due),money(p.amount)])):''):'')+table(['Item','Qtde.','Unitário','Total líquido'],s.lines.map(l=>[esc(l.name),number(l.qty-l.cancelQty),money(l.price),money(l.net-Math.floor(l.net*l.cancelQty/l.qty))]))+'<div class="totals">Total líquido <strong>'+money(s.total-s.cancelled)+'</strong></div>'+table(['Forma','Data','Valor'],s.payments.map(p=>[methods[p.method],date(p.date),money(p.amount)]))+(s.refunds.length?'<h3>Estornos</h3>'+table(['Forma','Valor'],s.refunds.map(p=>[methods[p.method],money(p.amount)])):'')+'<p>Saldo em aberto '+money(outstanding(s))+'</p>');
+}
+const deviceConditions={new:'Novo',used:'Seminovo'};
+const deviceMethods=()=>Object.entries(methods).filter(([key])=>['pix','cash','debit','credit'].includes(key));
+function deviceDueDate(first,offset){
+ const [year,month,day]=first.split('-').map(Number);
+ const target=new Date(Date.UTC(year,month-1+offset,1));
+ const last=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();
+ target.setUTCDate(Math.min(day,last));
+ return target.toISOString().slice(0,10);
+}
+function makeDeviceInstallments(balance,count,first){
+ if(!Number.isInteger(count)||count<1||count>60||balance<count)fail('Informe de 1 a 60 parcelas, com pelo menos R$ 0,01 em cada.');
+ const base=Math.floor(balance/count),rest=balance%count;
+ return Array.from({length:count},(_,i)=>({number:i+1,due:deviceDueDate(first,i),amount:base+(i<rest?1:0)}));
+}
+function deviceParcelPayment(sale,parcel){
+ return sale.payments.find(p=>p.kind==='receipt'&&p.deviceInstallment===parcel.number);
+}
+function deviceDueAlerts(){
+ if(session.role!=='admin')return '';
+ const nowDate=today(),limit=new Date(nowDate+'T12:00:00Z');
+ limit.setUTCDate(limit.getUTCDate()+7);
+ const through=limit.toISOString().slice(0,10);
+ const rows=data.sales.filter(s=>s.deviceSale&&s.cancelled<s.total).flatMap(s=>
+  s.deviceSale.installments.filter(p=>p.due<=through&&!deviceParcelPayment(s,p)).map(p=>[s,p])
+ ).sort((a,b)=>a[1].due.localeCompare(b[1].due));
+ const overdue=rows.filter(([,p])=>p.due<nowDate).length;
+ const dueToday=rows.filter(([,p])=>p.due===nowDate).length;
+ return '<section class="panel"><div class="npc-section-head"><h3>Parcelas de aparelhos</h3>'+button('nav','Ver vendas de aparelhos','devices','small')+'</div>'+
+  '<div class="summary">'+metric('Vencidas',number(overdue))+metric('Vencem hoje',number(dueToday))+metric('Próximos 7 dias',number(rows.length-overdue-dueToday))+'</div>'+
+  (rows.length?table(['Vencimento','Cliente','Aparelho','Parcela','Valor',''],rows.slice(0,8).map(([s,p])=>[
+   date(p.due),esc(s.client.name),esc(s.deviceSale.model),String(p.number),money(p.amount),button('device-details','Abrir venda',s.id,'small')
+  ])):'<p class="help">Nenhuma parcela vencida ou a vencer nos próximos sete dias.</p>')+'</section>';
+}
+function deviceSalesView(){
+ admin();
+ const rows=data.sales.filter(s=>s.deviceSale&&match({...s.deviceSale,customer:s.client.name},['model','color','imei','customer'],query('devices'))).slice().reverse();
+ return '<div class="toolbar">'+searchBox('devices','Buscar modelo, cor, cliente ou IMEI')+'</div>'+
+  table(['Venda','Data','Aparelho','Cliente','Total','Saldo a receber','Situação',''],rows.map(s=>[
+   esc(s.number),date(s.date),esc(s.deviceSale.model+' · '+s.deviceSale.color+' · '+deviceConditions[s.deviceSale.condition]),
+   esc(s.client.name),money(s.total),money(outstanding(s)),s.cancelled===s.total?'Cancelada':outstanding(s)>0?'A prazo':'Quitada',
+   button('device-details','Detalhes e parcelas',s.id,'small')
+  ]));
+}
+function deviceSaleDialog(){
+ admin();
+ openDialog('Nova venda de aparelho','<form data-form="device-sale"><div class="grid">'+
+  field('model','Modelo','','text','required maxlength="100"')+field('color','Cor','','text','required maxlength="60"')+
+  select('condition','Estado do aparelho',Object.entries(deviceConditions),'new')+
+  field('imei','IMEI (15 dígitos)','','text','required inputmode="numeric" pattern="[0-9]{15}" maxlength="15"')+
+  select('client','Cliente',[['','Consumidor'],...data.clients.map(c=>[c.id,c.name])],'')+
+  field('total','Valor da venda (R$)','','text','required inputmode="decimal"')+
+  select('terms','Condição de pagamento',[['now','À vista'],['later','A prazo']],'now')+
+  select('method','Forma de pagamento',deviceMethods(),'pix')+
+  '</div>'+area('notes','Condições do aparelho e observações','', 'maxlength="600"')+
+  '<div class="grid" data-device-plan hidden>'+
+  field('address','Endereço de cobrança','','text','maxlength="350"')+
+  field('down','Entrada recebida (R$)','0,00','text','inputmode="decimal"')+
+  field('count','Quantidade de parcelas','1','number','min="1" max="60" step="1"')+
+  field('firstDue','Primeiro vencimento',deviceDueDate(today(),1),'date','min="'+today()+'"')+
+  '<p class="help">A forma de pagamento selecionada é usada para a entrada. A forma de cada parcela é informada na baixa.</p></div>'+
+  buttonsSave('Registrar venda')+'</form>');
+ const form=$('[data-form="device-sale"]',$('#modal-body'));
+ function togglePlan(){
+  const financed=form.elements.terms.value==='later';
+  $('[data-device-plan]',form).hidden=!financed;
+  for(const key of ['address','down','count','firstDue']){
+   form.elements[key].disabled=!financed;
+   form.elements[key].required=financed&&key!=='down';
+  }
+ }
+ form.elements.terms.addEventListener('change',togglePlan);
+ form.elements.client.addEventListener('change',()=>{
+  const client=data.clients.find(c=>c.id===form.elements.client.value);
+  form.elements.address.value=client?.address||'';
+ });
+ togglePlan();
+}
+function deviceSaleDetails(saleId){
+ admin();
+ const s=data.sales.find(item=>item.id===saleId&&item.deviceSale);
+ if(!s)fail('Venda de aparelho não encontrada.');
+ const d=s.deviceSale;
+ const cancelled=s.cancelled===s.total;
+ const overview='<p><b>'+esc(d.model)+' · '+esc(d.color)+' · '+esc(deviceConditions[d.condition])+'</b></p>'+
+  '<p>IMEI '+esc(d.imei)+' · Cliente '+esc(s.client.name)+'</p>'+
+  (d.address?'<p>Endereço de cobrança: '+esc(d.address)+'</p>':'')+
+  (d.notes?'<p class="preline">'+esc(d.notes)+'</p>':'')+
+  '<p>Total '+money(s.total)+' · Saldo em aberto '+money(outstanding(s))+(cancelled?' · Venda cancelada':'')+'</p>';
+ const rows=d.installments.map(p=>{
+  const paid=deviceParcelPayment(s,p);
+  const status=cancelled?'Cancelada':paid?'Paga em '+date(paid.date):p.due<today()?'Vencida':p.due===today()?'Vence hoje':'Em aberto';
+  return [String(p.number),date(p.due),money(p.amount),esc(status),!paid&&!cancelled?button('device-receive','Registrar pagamento',s.id+':'+p.number,'small primary'):''];
+ });
+ openDialog('Venda de aparelho '+s.number,overview+
+  (rows.length?table(['Parcela','Vencimento','Valor','Situação',''],rows):'')+
+  '<div class="actions">'+button('receipt','Imprimir comprovante',s.id)+button('close','Fechar')+'</div>');
+}
+function deviceReceiveDialog(key){
+ admin();
+ const [saleId,number]=key.split(':');
+ const sale=data.sales.find(s=>s.id===saleId&&s.deviceSale);
+ const parcel=sale?.deviceSale.installments.find(p=>p.number===Number(number));
+ if(!parcel||sale.cancelled===sale.total||deviceParcelPayment(sale,parcel))fail('Parcela indisponível.');
+ openDialog('Receber parcela '+parcel.number,'<form data-form="device-receive"><p>Venda '+esc(sale.number)+' · '+esc(sale.client.name)+'</p><p>Vencimento '+date(parcel.due)+' · <b>'+money(parcel.amount)+'</b></p>'+
+  select('method','Forma recebida',deviceMethods(),'pix')+buttonsSave('Confirmar recebimento')+'</form>',{saleId,number:parcel.number,version:sale.version});
 }
 const actions={
+ 'device-new'(){deviceSaleDialog();},
+ 'device-details'(el){deviceSaleDetails(el.dataset.id);},
+ 'device-receive'(el){deviceReceiveDialog(el.dataset.id);},
  'continue-login'(){stockShown=true;renderAuth();},
  nav(el){if(!nav.some(([key])=>key===el.dataset.id))return;requireFeature(el.dataset.id);tab=el.dataset.id;subtab='sales';render();$('#main').classList.add('npc-view-enter');},
  'home-period'(el){requireFeature('cash');if(!['1','7','30'].includes(el.dataset.id))return;filters.homeDays=Number(el.dataset.id);renderMain();$('#main .npc-trend')?.classList.add('npc-view-enter');},
@@ -2207,6 +2319,51 @@ const actions={
  'new-user'(){userDialog();},'edit-user'(el){userDialog(el.dataset.id);}
 };
 const submits={
+ async 'device-sale'(form){
+  admin();
+  const values=new FormData(form),read=key=>String(values.get(key)||'').trim();
+  const model=read('model'),color=read('color'),condition=read('condition'),imei=read('imei'),notes=read('notes');
+  if(!model||!color||!Object.hasOwn(deviceConditions,condition)||!/^\d{15}$/.test(imei))fail('Preencha modelo, cor, condição e IMEI com 15 dígitos.');
+  const total=cents(read('total'),'Valor da venda'),method=read('method'),financed=read('terms')==='later';
+  if(total<=0||!deviceMethods().some(([key])=>key===method))fail('Informe um valor positivo e uma forma de pagamento válida.');
+  const clientId=read('client'),address=financed?read('address'):'',down=financed?cents(read('down'),'Entrada'):total;
+  let parcels=[];
+  if(financed){
+   const first=read('firstDue');
+   if(!clientId||!address)fail('Selecione um cliente e informe o endereço de cobrança para a venda a prazo.');
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(first)||first<today()||deviceDueDate(first,0)!==first)fail('Informe uma data válida para o primeiro vencimento.');
+   if(down>=total)fail('A entrada deve ser menor que o valor total para parcelar.');
+   parcels=makeDeviceInstallments(total-down,Number(read('count')),first);
+  }
+  let saleNumber;
+  await transaction((db,user)=>{
+   admin(user);
+   const client=clientSnapshot(db,clientId);
+   if(clientId&&!client.id)fail('Este cliente não está mais cadastrado.');
+   const payments=[...(down>0?[{method,amount:down}]:[]),...(financed?[{method:'debt',amount:total-down}]:[])];
+   const sale=recordSale(db,user,{client,payments,cashShift:selectedShift(db),lines:[{custom:true,name:model+' · '+color+' · '+deviceConditions[condition],qty:1,price:total}],discount:0,surcharge:0});
+   sale.deviceSale={model,color,condition,imei,notes,address,installments:parcels};
+   saleNumber=sale.number;
+  });
+  closeDialog();renderMain();toast('Venda de aparelho '+saleNumber+' registrada.');
+ },
+ async 'device-receive'(form){
+  admin();
+  const state=dialogState,method=String(new FormData(form).get('method')||'');
+  if(!deviceMethods().some(([key])=>key===method))fail('Selecione uma forma de pagamento válida.');
+  await transaction((db,user)=>{
+   admin(user);
+   const sale=db.sales.find(s=>s.id===state.saleId&&s.deviceSale);
+   version(sale,state.version);
+   const parcel=sale.deviceSale.installments.find(p=>p.number===state.number);
+   if(!parcel||sale.cancelled===sale.total||deviceParcelPayment(sale,parcel)||parcel.amount>outstanding(sale))fail('Esta parcela já foi paga ou está indisponível.');
+   const receivedDate=today(),shift=selectedShift(db)||shiftForSaleDate(db,receivedDate);
+   sale.payments.push({id:id(),date:receivedDate,kind:'receipt',method,amount:parcel.amount,deviceInstallment:parcel.number});
+   sale.version++;
+   ledger(db,shift,method,parcel.amount,'Parcela '+parcel.number+' da venda de aparelho '+sale.number,{saleId:sale.id,kind:'receipt',date:receivedDate});
+  });
+  closeDialog();renderMain();deviceSaleDetails(state.saleId);toast('Pagamento da parcela registrado no Caixa.');
+ },
  async record(form){
   const values=new FormData(form),state=dialogState,{kind}=state;
   await transaction(db=>{
@@ -2290,6 +2447,7 @@ const submits={
   if(amount<=0)fail('Informe um valor maior que zero.');
   await transaction(db=>{
    const s=db.sales.find(s=>s.id===state.saleId);version(s,state.version);
+   if(s.deviceSale)fail('Registre o pagamento pela parcela correspondente na aba Venda de aparelho.');
    const shift=requireShift(db);if(amount>outstanding(s))fail('O recebimento supera o saldo em aberto.');
    const method=String(values.get('method'));if(!methods[method]||method==='debt')fail('Selecione uma forma recebida.');
    s.payments.push({id:id(),method,amount,kind:'receipt',date:today()});s.version++;
@@ -2391,7 +2549,7 @@ async function approveOnline(el,status){
 actions['approve-user']=el=>approveOnline(el,'active');
 actions['block-user']=el=>approveOnline(el,'blocked');
 actions['refresh-accounts']=async()=>{platformAdmin();await loadAccounts();renderMain();};
-const permissionChoices=()=>nav.filter(([key])=>!['settings','home'].includes(key)).map(([key,icon,label])=>'<label class="choice"><input type="checkbox" name="perm-'+key+'" value="1"><span>'+icon+' '+esc(label)+'</span></label>').join('');
+const permissionChoices=()=>nav.filter(([key])=>!['settings','home','devices'].includes(key)).map(([key,icon,label])=>'<label class="choice"><input type="checkbox" name="perm-'+key+'" value="1"><span>'+icon+' '+esc(label)+'</span></label>').join('');
 function userDialog(targetId=''){
  if(session.platformAdmin){platformAdmin();const u=accountList.find(x=>x.id===targetId);if(!u||u.platform_admin)fail('Conta não encontrada ou protegida.');openDialog('Alterar cadastro de acesso','<form data-form="account-edit">'+field('name','Nome de exibição',u.name,'text','required maxlength="100"')+field('email','E-mail de acesso',u.email,'email','required maxlength="254"')+'<p class="help">O nome será atualizado imediatamente. O Supabase enviará uma confirmação para o novo e-mail; o endereço de login muda após a confirmação.</p>'+buttonsSave('Salvar alterações')+'</form>',{accountId:u.id});return;}
  admin();const m=targetId?teamList.find(x=>x.id===targetId):null;if(targetId&&!m)fail('Vendedor não encontrado.');
@@ -2406,7 +2564,7 @@ actions['delete-user']=async el=>{
  admin();const m=teamList.find(x=>x.id===id);if(!m||!confirm('Excluir permanentemente o acesso de '+m.name+'?'))return;await teamRequest({action:'delete_member',id});await loadTeam();renderMain();toast('Acesso do vendedor excluído.');
 };
 submits['member-edit']=async form=>{
- admin();const values=new FormData(form),permissions={};for(const [key] of nav)if(!['settings','home'].includes(key))permissions[key]=values.get('perm-'+key)==='1';
+ admin();const values=new FormData(form),permissions={};for(const [key] of nav)if(!['settings','home','devices'].includes(key))permissions[key]=values.get('perm-'+key)==='1';
  const payload={name:String(values.get('name')||'').trim(),email:String(values.get('email')||'').trim(),permissions,active:values.get('active')==='1'};
  if(dialogState.memberId){payload.action='update_member';payload.id=dialogState.memberId;const old=teamList.find(x=>x.id===payload.id);if(old&&payload.email.toLowerCase()===old.email.toLowerCase())payload.email=old.email;await teamRequest(payload);toast(payload.email===old?.email?'Acesso atualizado.':'Acesso atualizado. Confirme o novo e-mail para concluir a troca do login.');}
  else {payload.action='invite_member';await teamRequest(payload);toast('Convite enviado. O vendedor deverá confirmar o e-mail e criar a senha.');}
