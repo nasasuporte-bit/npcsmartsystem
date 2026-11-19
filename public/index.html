@@ -1511,6 +1511,13 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .npc-landing-mark { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; margin-right: .25rem; border-radius: .7rem; background: #2d214b; color: #fff; }
 .npc-landing .npc-landing-login { min-height: 44px; justify-content: center; padding: .55rem 1.55rem; border-radius: .75rem; background: #5934bd; color: #fff; font-size: 1rem; font-weight: 750; }
 .npc-landing .npc-landing-login:hover { background: #46249e; }
+.npc-landing .npc-landing-login--hero {
+  min-height: 56px;
+  padding: .8rem 2.35rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  margin-bottom: 1.3rem;
+}
 .npc-landing a:focus-visible { outline: 3px solid #9369df; outline-offset: 4px; }
 .npc-landing-hero { display: grid; justify-items: center; padding: clamp(2.4rem, 4vw, 3.6rem) 1rem 2.5rem; text-align: center; }
 .npc-landing .npc-landing-hero h1 { margin: 0; font-size: clamp(2.25rem, 5.4vw, 5rem); line-height: 1.03; letter-spacing: -.059em; color: #20183a; }
@@ -1558,6 +1565,7 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   <section class="npc-landing-hero" aria-labelledby="npc-landing-title">
     <h1 id="npc-landing-title">Da bancada ao caixa.<br><em>Tudo no NPC SMART.</em></h1>
     <p>Gerencie ordens de serviço, estoque e vendas de aparelhos pelo computador ou celular.</p>
+    <a class="npc-landing-login npc-landing-login--hero" href="?login=1">Fazer login</a>
     <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do NPC SMART em um computador e um celular">
       <div class="npc-landing-orbit" aria-hidden="true"></div>
       <div class="npc-landing-laptop" aria-hidden="true">
