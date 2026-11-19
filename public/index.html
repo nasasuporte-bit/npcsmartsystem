@@ -1481,7 +1481,113 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   }
 }
 [data-device-plan][hidden]{display:none}
-</style></head><body><div id="app"><section class="panel"><h1>NPC SMART</h1><p>Carregando sistema online…</p><noscript>Este navegador ou visualizador não executa JavaScript. Abra o endereço publicado no Chrome ou Safari.</noscript></section></div><dialog id="modal"><div class="dialog-head"><h2 id="modal-title"></h2><button type="button" data-close aria-label="Fechar janela">×</button></div><div id="modal-body" class="dialog-body"></div></dialog><div id="toast" class="hidden" role="status"></div><div id="print-root"></div><input id="import-file" class="hidden" type="file" accept=".json,application/json"><input id="csv-file" class="hidden" type="file" accept=".csv,text/csv"><script>'use strict';
+
+.npc-landing {
+  min-height: 100vh;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: #f8f7ff;
+  color: #20183a;
+  font-family: system-ui, sans-serif;
+  color-scheme: light;
+}
+.npc-landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100% - 3rem, 1180px);
+  margin: auto;
+  padding: 1.35rem 0;
+  border-bottom: 1px solid #e5def3;
+}
+.npc-landing .npc-landing-brand, .npc-landing .npc-landing-login {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.npc-landing .npc-landing-brand { gap: .4rem; color: #20183a; font-size: 1.05rem; font-weight: 800; letter-spacing: .035em; }
+.npc-landing-brand b { color: #5834b1; }
+.npc-landing-mark { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; margin-right: .25rem; border-radius: .7rem; background: #2d214b; color: #fff; }
+.npc-landing .npc-landing-login { min-height: 44px; justify-content: center; padding: .55rem 1.55rem; border-radius: .75rem; background: #5934bd; color: #fff; font-size: 1rem; font-weight: 750; }
+.npc-landing .npc-landing-login:hover { background: #46249e; }
+.npc-landing a:focus-visible { outline: 3px solid #9369df; outline-offset: 4px; }
+.npc-landing-hero { display: grid; justify-items: center; padding: clamp(2.4rem, 4vw, 3.6rem) 1rem 2.5rem; text-align: center; }
+.npc-landing .npc-landing-hero h1 { margin: 0; font-size: clamp(2.25rem, 5.4vw, 5rem); line-height: 1.03; letter-spacing: -.059em; color: #20183a; }
+.npc-landing-hero h1 em { color: #5834b1; font-style: normal; }
+.npc-landing .npc-landing-hero > p { max-width: 37rem; margin: 1rem auto 1.75rem; color: #534a68; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.6; }
+.npc-landing-devices { isolation: isolate; container-type: inline-size; position: relative; width: min(100%, 790px); aspect-ratio: 2.1; margin: .35rem 0 0; }
+.npc-landing-orbit { position: absolute; z-index: -1; inset: 7% 1% 1%; border-radius: 45% 45% 12% 12%; background: radial-gradient(ellipse at 47% 48%, #d5c4ff 0, #ede4ff 51%, transparent 74%); }
+.npc-landing-laptop { position: absolute; inset: 0 11% 4% 2%; display: flex; flex-direction: column; }
+.npc-landing-monitor { display: flex; flex: 1; min-height: 0; margin: 0 7%; padding: 1.4%; border: 1px solid #4d4760; background: #211d2c; border-radius: 2.1cqw 2.1cqw .6cqw .6cqw; box-shadow: 0 1.9cqw 5.4cqw #39287339; }
+.npc-landing-laptop-base { height: 4%; border-radius: .4cqw .4cqw 6cqw 6cqw; background: linear-gradient(#5b546c, #302a3c 77%); }
+.npc-landing-panel { flex: 1; min-width: 0; background: #f5f2fc; color: #29213d; text-align: left; font-size: 1.4cqw; overflow: hidden; }
+.npc-landing-preview-head, .npc-landing-preview-nav { display: flex; align-items: center; gap: 2cqw; padding: 1.1cqw 2cqw; }
+.npc-landing-preview-head { background: #30244e; color: #fff; }
+.npc-landing-preview-head span { color: #dfd2fd; }
+.npc-landing-preview-nav { background: #fff; border-bottom: 1px solid #ddd5ef; white-space: nowrap; }
+.npc-landing-preview-nav b { color: #5934bd; }
+.npc-landing-preview-body { padding: 2cqw; }
+.npc-landing-preview-body > strong { font-size: 2.2cqw; }
+.npc-landing-preview-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1cqw; margin: 1.3cqw 0; }
+.npc-landing-preview-cards div, .npc-landing-preview-chart { padding: 1.35cqw; border: 1px solid #e4ddf1; border-radius: .8cqw; background: #fff; }
+.npc-landing-preview-cards b { display: block; margin-top: .45cqw; color: #5633ab; font-size: 2cqw; }
+.npc-landing-preview-chart > div { height: 9cqw; display: flex; gap: 1.2cqw; align-items: end; margin-top: .8cqw; border-bottom: 1px solid #e4ddf1; }
+.npc-landing-preview-chart i { flex: 1; height: 47%; border-radius: .45cqw .45cqw 0 0; background: #b199ea; }
+.npc-landing-preview-chart i:nth-child(2n) { height: 65%; }
+.npc-landing-preview-chart i:nth-child(3n) { height: 34%; }
+.npc-landing-preview-chart i:last-child { height: 90%; background: #6640c6; }
+.npc-landing-phone { position: absolute; inset: 21% 3% 0 auto; width: 23%; padding: .92cqw; border: 1px solid #5b526d; border-radius: 3.1cqw; background: #211d2c; box-shadow: 0 2.5cqw 3.8cqw #30205048; }
+.npc-landing-phone-screen { height: 100%; padding: 2.1cqw 1.3cqw; overflow: hidden; border-radius: 2.2cqw; text-align: left; background: #f5f2fc; color: #2b2040; font-size: 1.48cqw; }
+.npc-landing-phone-screen > b { display: block; color: #5934bd; }
+.npc-landing-phone-screen > strong { display: block; margin: 1.55cqw 0 1cqw; font-size: 1.65cqw; }
+.npc-landing-phone-screen > div { display: grid; gap: .28cqw; margin-bottom: 1cqw; padding: 1cqw; border: 1px solid #e4ddf1; border-radius: .8cqw; background: #fff; }
+.npc-landing-phone-screen span { color: #5633ab; }
+@media (max-width: 520px) {
+  .npc-landing-header { width: calc(100% - 2rem); padding: 1rem 0; }
+  .npc-landing-hero { padding-inline: .7rem; }
+  .npc-landing .npc-landing-hero h1 { font-size: clamp(1.85rem, 8.8vw, 2.7rem); }
+  .npc-landing .npc-landing-hero > p { max-width: 21rem; }
+}
+</style></head><body><div id="app">
+<main class="npc-landing">
+  <header class="npc-landing-header">
+    <a class="npc-landing-brand" href="./" aria-label="NPC SMART, página inicial"><span class="npc-landing-mark" aria-hidden="true">N</span>NPC <b>SMART</b></a>
+    <a class="npc-landing-login" href="?login=1">Login</a>
+  </header>
+  <section class="npc-landing-hero" aria-labelledby="npc-landing-title">
+    <h1 id="npc-landing-title">Da bancada ao caixa.<br><em>Tudo no NPC SMART.</em></h1>
+    <p>Gerencie ordens de serviço, estoque e vendas de aparelhos pelo computador ou celular.</p>
+    <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do NPC SMART em um computador e um celular">
+      <div class="npc-landing-orbit" aria-hidden="true"></div>
+      <div class="npc-landing-laptop" aria-hidden="true">
+        <div class="npc-landing-monitor">
+          <div class="npc-landing-panel">
+            <div class="npc-landing-preview-head"><b>NPC SMART</b><span>Painel da assistência</span></div>
+            <div class="npc-landing-preview-nav"><b>Início</b><span>Vendas</span><span>Estoque</span><span>Ordens de serviço</span><span>Caixa</span></div>
+            <div class="npc-landing-preview-body">
+              <strong>Visão geral</strong>
+              <div class="npc-landing-preview-cards">
+                <div><span>OS em andamento</span><b>08</b></div><div><span>Vendas do dia</span><b>R$ 1.240</b></div><div><span>Parcelas a vencer</span><b>03</b></div>
+              </div>
+              <div class="npc-landing-preview-chart"><span>Recebimentos da semana</span><div><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="npc-landing-laptop-base"></div>
+      </div>
+      <div class="npc-landing-phone" aria-hidden="true">
+        <div class="npc-landing-phone-screen">
+          <b>NPC SMART</b>
+          <strong>Ordens de serviço</strong>
+          <div><small>OS 0284</small><b>Troca de tela</b><span>Em andamento</span></div>
+          <div><small>OS 0281</small><b>Diagnóstico</b><span>Pronto</span></div>
+        </div>
+      </div>
+    </figure>
+  </section>
+</main>
+</div><dialog id="modal"><div class="dialog-head"><h2 id="modal-title"></h2><button type="button" data-close aria-label="Fechar janela">×</button></div><div id="modal-body" class="dialog-body"></div></dialog><div id="toast" class="hidden" role="status"></div><div id="print-root"></div><input id="import-file" class="hidden" type="file" accept=".json,application/json"><input id="csv-file" class="hidden" type="file" accept=".csv,text/csv"><script>'use strict';
 (() => {
 const ONLINE={"url":"https://fxdofioheljchztcidus.supabase.co","publishableKey":"sb_publishable_KzrPJW2wwbDE0qgelXGKig_Dj4rCeoI"};
 const SCHEMA=1;
@@ -2596,17 +2702,19 @@ async function openTrackingPage(token){
  catch{renderTrackingPage(null,'unavailable');}
 }
 async function bootOnline(){
- data=seed();data.users=[];applyTheme();renderAuth();
+ data=seed();data.users=[];applyTheme();
  try{
   const fragment=new URLSearchParams(location.hash.slice(1));
   if(fragment.get('acompanhar')){await openTrackingPage(fragment.get('acompanhar'));return;}
-  if(fragment.get('error_description')){const msg=fragment.get('error_description');history.replaceState(null,'',location.pathname);toast(msg);return;}
+  if(fragment.get('error_description')){const msg=fragment.get('error_description');history.replaceState(null,'',location.pathname+'?login=1');renderAuth();toast(msg);return;}
   if(fragment.get('access_token')){
+   renderAuth();
    storeTokens({access_token:fragment.get('access_token'),refresh_token:fragment.get('refresh_token'),expires_in:Number(fragment.get('expires_in')||3600)});
    const recovery=['recovery','invite'].includes(fragment.get('type'));history.replaceState(null,'',location.pathname);
    await api('/auth/v1/user');if(recovery){renderAuth('password');return;}
   }else{try{authTokens=JSON.parse(sessionStorage.getItem(AUTH_KEY)||'null');}catch{authTokens=null;}}
   if(authTokens)await enterOnline();
+  else if(new URLSearchParams(location.search).get('login')==='1')renderAuth();
  }catch(error){storeTokens(null);renderAuth();toast(authFormError(error).message);}
 }
 window.addEventListener('online',()=>toast('Conexão restabelecida. Use Atualizar para carregar os dados do servidor.'));
