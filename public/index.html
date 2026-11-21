@@ -1560,12 +1560,12 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 <main class="npc-landing">
   <header class="npc-landing-header">
     <a class="npc-landing-brand" href="./" aria-label="NPC SMART, página inicial"><span class="npc-landing-mark" aria-hidden="true">N</span>NPC <b>SMART</b></a>
-    <a class="npc-landing-login" href="?login=1">Login</a>
+    <a class="npc-landing-login" href="/?login=1">Login</a>
   </header>
   <section class="npc-landing-hero" aria-labelledby="npc-landing-title">
     <h1 id="npc-landing-title">Da bancada ao caixa.<br><em>Tudo no NPC SMART.</em></h1>
     <p>Gerencie ordens de serviço, estoque e vendas de aparelhos pelo computador ou celular.</p>
-    <a class="npc-landing-login npc-landing-login--hero" href="?login=1">Fazer login</a>
+    <a class="npc-landing-login npc-landing-login--hero" href="/?login=1">Fazer login</a>
     <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do NPC SMART em um computador e um celular">
       <div class="npc-landing-orbit" aria-hidden="true"></div>
       <div class="npc-landing-laptop" aria-hidden="true">
@@ -2717,6 +2717,7 @@ async function openTrackingPage(token){
 }
 async function bootOnline(){
  data=seed();data.users=[];applyTheme();
+ if(new URLSearchParams(location.search).get('login')==='1'){renderAuth();return;}
  try{
   const fragment=new URLSearchParams(location.hash.slice(1));
   if(fragment.get('acompanhar')){await openTrackingPage(fragment.get('acompanhar'));return;}
