@@ -1563,6 +1563,109 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .device-stock-card h4,.device-stock-card p{margin:0}
 .device-stock-card .row{margin-top:auto}
 .device-stock-form-photo{max-width:240px;margin:.75rem 0}
+
+.npc-landing .npc-merchants {
+  width: min(calc(100% - 3rem), 1180px);
+  margin: 0 auto;
+  padding: 0 0 clamp(3rem, 7vw, 6rem);
+}
+.npc-merchants-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  min-height: clamp(340px, 39vw, 460px);
+  border-radius: 1.5rem;
+  background: #220f58;
+}
+.npc-merchants-visual {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 auto;
+  width: 66%;
+}
+.npc-merchants-visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+.npc-merchants-visual::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, #220f58, transparent 44%);
+}
+.npc-merchants-copy { width: min(58%, 38rem); padding: clamp(1.6rem, 4vw, 3.8rem); }
+.npc-merchants-copy > span {
+  color: #dfcbff;
+  font-size: .82rem;
+  font-weight: 750;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.npc-landing .npc-merchants h2 {
+  margin: .85rem 0 1rem;
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.65rem);
+  line-height: 1.04;
+  letter-spacing: -.05em;
+}
+.npc-landing .npc-merchants-copy p {
+  max-width: 26rem;
+  margin: 0 0 1.45rem;
+  color: #e4dafd;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+.npc-landing .npc-merchants-contact {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: .7rem 1.15rem;
+  border-radius: .8rem;
+  background: #efe6ff;
+  color: #22123f;
+  font-size: .95rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.npc-landing .npc-merchants-contact:hover { background: #fff; color: #22123f; }
+.npc-merchants-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .9rem;
+  margin-top: 1rem;
+}
+.npc-merchants-features article {
+  padding: 1.25rem 1.4rem;
+  border: 1px solid #e5def3;
+  border-radius: 1rem;
+  background: #fff;
+}
+.npc-landing .npc-merchants-features h3 {
+  margin: 0 0 .4rem;
+  color: #38216f;
+  font-size: 1.1rem;
+}
+.npc-landing .npc-merchants-features p {
+  margin: 0;
+  color: #534a68;
+  font-size: .95rem;
+  line-height: 1.55;
+}
+@media (max-width: 700px) {
+  .npc-landing .npc-merchants { width: calc(100% - 2rem); }
+  .npc-merchants-banner { min-height: 0; }
+  .npc-merchants-copy { width: 100%; }
+  .npc-merchants-visual { position: relative; width: 100%; aspect-ratio: 2 / 1; }
+  .npc-merchants-visual img { object-position: right 43%; }
+  .npc-merchants-visual::after { background: linear-gradient(180deg, #220f58, transparent 26%); }
+  .npc-merchants-features { grid-template-columns: 1fr; }
+}
 </style></head><body><div id="app">
 <main class="npc-landing">
   <header class="npc-landing-header">
@@ -1600,6 +1703,24 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
         </div>
       </div>
     </figure>
+  </section>
+  <section class="npc-merchants" aria-labelledby="npc-merchants-title">
+    <div class="npc-merchants-banner">
+      <div class="npc-merchants-copy">
+        <span>Para lojas de celulares</span>
+        <h2 id="npc-merchants-title">Do estoque à venda, acompanhe tudo em um só lugar.</h2>
+        <p>Veja quais aparelhos estão disponíveis, registre suas vendas e acompanhe o que já entrou no caixa e o que ainda falta receber.</p>
+        <a class="npc-merchants-contact" href="https://wa.me/5531981172771?text=Ol%C3%A1!%20Tenho%20uma%20loja%20e%20gostaria%20de%20conhecer%20o%20sistema%20NPC%20SMART." target="_blank" rel="noopener noreferrer">Conhecer pelo WhatsApp</a>
+      </div>
+      <div class="npc-merchants-visual" aria-hidden="true">
+        <img src="/npc-smart-lojistas.webp" alt="" width="1120" height="746" loading="lazy" decoding="async">
+      </div>
+    </div>
+    <div class="npc-merchants-features">
+      <article><h3>Estoque com fotos</h3><p>Cadastre modelo, cor, estado e foto. A quantidade é atualizada ao vender pelo estoque.</p></article>
+      <article><h3>Vendas e parcelas</h3><p>Registre vendas à vista ou a prazo, emita o cupom e acompanhe os vencimentos.</p></article>
+      <article><h3>Caixa e assistência</h3><p>Consulte entradas e saídas e acompanhe suas ordens de serviço no mesmo sistema.</p></article>
+    </div>
   </section>
 </main>
 </div><dialog id="modal"><div class="dialog-head"><h2 id="modal-title"></h2><button type="button" data-close aria-label="Fechar janela">×</button></div><div id="modal-body" class="dialog-body"></div></dialog><div id="toast" class="hidden" role="status"></div><div id="print-root"></div><input id="import-file" class="hidden" type="file" accept=".json,application/json"><input id="csv-file" class="hidden" type="file" accept=".csv,text/csv"><script>'use strict';
