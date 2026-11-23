@@ -1556,6 +1556,13 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   .npc-landing .npc-landing-hero h1 { font-size: clamp(1.85rem, 8.8vw, 2.7rem); }
   .npc-landing .npc-landing-hero > p { max-width: 21rem; }
 }
+
+.device-stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:1rem}
+.device-stock-card{display:grid;gap:.75rem;border:1px solid var(--border);border-radius:12px;padding:1rem;background:var(--surface2)}
+.device-stock-photo{display:block;width:100%;aspect-ratio:3/2;object-fit:contain;border-radius:8px;background:var(--surface)}
+.device-stock-card h4,.device-stock-card p{margin:0}
+.device-stock-card .row{margin-top:auto}
+.device-stock-form-photo{max-width:240px;margin:.75rem 0}
 </style></head><body><div id="app">
 <main class="npc-landing">
   <header class="npc-landing-header">
@@ -2240,24 +2247,80 @@ function deviceDueAlerts(){
    date(p.due),esc(s.client.name),esc(s.deviceSale.model),String(p.number),money(p.amount),button('device-details','Abrir venda',s.id,'small')
   ])):'<p class="help">Nenhuma parcela vencida ou a vencer nos próximos sete dias.</p>')+'</section>';
 }
+function deviceStockCards(rows){
+ return '<div class="device-stock-grid">'+rows.map(product=>{
+  const stock=product.deviceStock;
+  return '<article class="device-stock-card">'+
+   (stock.photo?'<img class="device-stock-photo" loading="lazy" decoding="async" src="'+esc(stock.photo)+'" alt="Foto de '+esc(stock.model)+'">':'')+
+   '<h4>'+esc(stock.model)+'</h4><p>'+esc(stock.color)+' · '+esc(deviceConditions[stock.condition])+'</p>'+
+   '<p><strong>'+money(product.price)+'</strong> · '+(product.qty?number(product.qty)+' disponível(is)':'Esgotado')+'</p>'+
+   '<div class="row">'+(product.qty?button('device-stock-sell','Vender',product.id,'primary small'):'')+
+   button('device-stock-edit','Editar',product.id,'small')+'</div></article>';
+ }).join('')+'</div>';
+}
+function deviceStockDialog(productId=''){
+ admin();
+ const product=productId?data.products.find(p=>p.id===productId&&p.type==='product'&&p.deviceStock):null;
+ if(productId&&!product)fail('Aparelho não encontrado.');
+ const stock=product?.deviceStock;
+ openDialog(product?'Editar aparelho':'Cadastrar aparelho','<form data-form="device-stock">'+
+  '<div class="grid">'+field('model','Modelo',stock?.model||'','text','required maxlength="100"')+
+  field('color','Cor',stock?.color||'','text','required maxlength="60"')+
+  select('condition','Estado do aparelho',Object.entries(deviceConditions),stock?.condition||'new')+
+  field('qty','Quantidade',product?.qty??1,'number','required min="0" max="1000000000" step="1"')+
+  field('price','Preço de venda (R$)',product?dec(product.price):'','text','required inputmode="decimal"')+'</div>'+
+  '<label>Foto do aparelho <input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></label>'+
+  (stock?.photo?'<img class="device-stock-photo device-stock-form-photo" src="'+esc(stock.photo)+'" alt="Foto atual do aparelho">'+
+   '<label><input type="checkbox" name="removePhoto"> Remover foto atual</label>':'')+
+  buttonsSave('Salvar aparelho')+'</form>',{productId,version:product?.version});
+}
+async function prepareDevicePhoto(file){
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>15*1024*1024)fail('Escolha uma foto JPG, PNG ou WebP de até 15 MB.');
+ let image;
+ try{image=await createImageBitmap(file);}catch{fail('Não foi possível abrir esta foto. Escolha outro arquivo.');}
+ try{
+  const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
+  if(!context)fail('Seu navegador não conseguiu preparar a foto.');
+  for(const size of [640,480,320,240,160]){
+   const scale=Math.min(1,size/Math.max(image.width,image.height));
+   canvas.width=Math.max(1,Math.round(image.width*scale));
+   canvas.height=Math.max(1,Math.round(image.height*scale));
+   context.drawImage(image,0,0,canvas.width,canvas.height);
+   const result=canvas.toDataURL('image/webp',.72);
+   if(/^data:image\/(webp|png);base64,[A-Za-z0-9+/]+=*$/.test(result)&&result.length<=44000)return result;
+  }
+ }finally{image.close();}
+ fail('Não foi possível reduzir esta foto. Escolha outra imagem.');
+}
 function deviceSalesView(){
  admin();
  const rows=data.sales.filter(s=>s.deviceSale&&match({...s.deviceSale,customer:s.client.name},['model','color','imei','customer'],query('devices'))).slice().reverse();
+ const inventory=data.products.filter(p=>p.type==='product'&&p.deviceStock&&match(p.deviceStock,['model','color'],query('devices')));
+ const available=inventory.filter(p=>p.qty>0), soldOut=inventory.filter(p=>p.qty===0);
  return '<div class="toolbar">'+searchBox('devices','Buscar modelo, cor, cliente ou IMEI')+'</div>'+
+  '<section class="panel"><div class="npc-section-head"><h3>Aparelhos disponíveis</h3>'+button('device-stock-edit','Cadastrar aparelho','','primary')+'</div>'+
+  (available.length?deviceStockCards(available):'<p class="help">Nenhum aparelho disponível.</p>')+
+  (soldOut.length?'<details><summary>Esgotados ('+number(soldOut.length)+')</summary>'+deviceStockCards(soldOut)+'</details>':'')+
+  '</section><h3>Histórico de vendas de aparelhos</h3>'+
   table(['Venda','Data','Aparelho','Cliente','Total','Saldo a receber','Situação',''],rows.map(s=>[
    esc(s.number),date(s.date),esc(s.deviceSale.model+' · '+s.deviceSale.color+' · '+deviceConditions[s.deviceSale.condition]),
    esc(s.client.name),money(s.total),money(outstanding(s)),s.cancelled===s.total?'Cancelada':outstanding(s)>0?'A prazo':'Quitada',
    button('device-details','Detalhes e parcelas',s.id,'small')
   ]));
 }
-function deviceSaleDialog(){
+function deviceSaleDialog(productId=''){
  admin();
- openDialog('Nova venda de aparelho','<form data-form="device-sale"><div class="grid">'+
-  field('model','Modelo','','text','required maxlength="100"')+field('color','Cor','','text','required maxlength="60"')+
-  select('condition','Estado do aparelho',Object.entries(deviceConditions),'new')+
+ const product=productId?data.products.find(p=>p.id===productId&&p.type==='product'&&p.deviceStock&&p.qty>0):null;
+ if(productId&&!product)fail('Aparelho indisponível para venda.');
+ const stock=product?.deviceStock;
+ openDialog('Nova venda de aparelho','<form data-form="device-sale">'+
+  (stock?'<p><strong>'+esc(stock.model)+' · '+esc(stock.color)+' · '+esc(deviceConditions[stock.condition])+'</strong></p>':'')+
+  '<div class="grid">'+
+  (stock?'':field('model','Modelo','','text','required maxlength="100"')+field('color','Cor','','text','required maxlength="60"')+
+  select('condition','Estado do aparelho',Object.entries(deviceConditions),'new'))+
   field('imei','IMEI (15 dígitos)','','text','required inputmode="numeric" pattern="[0-9]{15}" maxlength="15"')+
   select('client','Cliente',[['','Consumidor'],...data.clients.map(c=>[c.id,c.name])],'')+
-  field('total','Valor da venda (R$)','','text','required inputmode="decimal"')+
+  field('total','Valor da venda (R$)',product?dec(product.price):'','text','required inputmode="decimal"')+
   select('terms','Condição de pagamento',[['now','À vista'],['later','A prazo']],'now')+
   select('method','Forma de pagamento',deviceMethods(),'pix')+
   '</div>'+area('notes','Condições do aparelho e observações','', 'maxlength="600"')+
@@ -2267,7 +2330,7 @@ function deviceSaleDialog(){
   field('count','Quantidade de parcelas','1','number','min="1" max="60" step="1"')+
   field('firstDue','Primeiro vencimento',deviceDueDate(today(),1),'date','min="'+today()+'"')+
   '<p class="help">A forma de pagamento selecionada é usada para a entrada. A forma de cada parcela é informada na baixa.</p></div>'+
-  buttonsSave('Registrar venda')+'</form>');
+  buttonsSave('Registrar venda')+'</form>',{productId,productVersion:product?.version});
  const form=$('[data-form="device-sale"]',$('#modal-body'));
  function togglePlan(){
   const financed=form.elements.terms.value==='later';
@@ -2315,6 +2378,8 @@ function deviceReceiveDialog(key){
 }
 const actions={
  'device-new'(){deviceSaleDialog();},
+ 'device-stock-edit'(el){deviceStockDialog(el.dataset.id);},
+ 'device-stock-sell'(el){deviceSaleDialog(el.dataset.id);},
  'device-details'(el){deviceSaleDetails(el.dataset.id);},
  'device-receive'(el){deviceReceiveDialog(el.dataset.id);},
  'continue-login'(){stockShown=true;renderAuth();},
@@ -2440,11 +2505,38 @@ const actions={
  'new-user'(){userDialog();},'edit-user'(el){userDialog(el.dataset.id);}
 };
 const submits={
+ async 'device-stock'(form){
+  admin();
+  const {productId,version:expected}=dialogState;
+  const values=new FormData(form),read=key=>String(values.get(key)||'').trim();
+  const model=read('model'),color=read('color'),condition=read('condition');
+  if(!model||model.length>100||!color||color.length>60||!Object.hasOwn(deviceConditions,condition))fail('Preencha modelo, cor e estado do aparelho.');
+  if(!read('qty'))fail('Informe a quantidade.');
+  const qty=integer(read('qty'),'Quantidade'),price=cents(read('price'),'Preço de venda');
+  if(!price)fail('Informe um preço maior que zero.');
+  const file=values.get('photo');
+  const photo=file?.size?await prepareDevicePhoto(file):null;
+  await transaction((db,user)=>{
+   admin(user);
+   const productIdToSave=productId||id();
+   const product=productId?db.products.find(p=>p.id===productId&&p.type==='product'&&p.deviceStock):
+    {id:productIdToSave,sku:'AP-'+productIdToSave,barcode:'',brand:'',supplierId:'',type:'product',unit:'UN',min:0,cost:0,version:0};
+   if(productId)version(product,expected);
+   const savedPhoto=photo??(values.has('removePhoto')?'':product.deviceStock?.photo||'');
+   Object.assign(product,{name:model+' · '+color+' · '+deviceConditions[condition],qty,price,deviceStock:{model,color,condition,photo:savedPhoto}});
+   product.version++;
+   if(!productId)db.products.push(product);
+  });
+  closeDialog();renderMain();toast('Aparelho salvo no estoque.');
+ },
  async 'device-sale'(form){
   admin();
   const values=new FormData(form),read=key=>String(values.get(key)||'').trim();
-  const model=read('model'),color=read('color'),condition=read('condition'),imei=read('imei'),notes=read('notes');
-  if(!model||!color||!Object.hasOwn(deviceConditions,condition)||!/^\d{15}$/.test(imei))fail('Preencha modelo, cor, condição e IMEI com 15 dígitos.');
+  const {productId,productVersion}=dialogState;
+  const manualDevice={model:read('model'),color:read('color'),condition:read('condition')};
+  const imei=read('imei'),notes=read('notes');
+  if(!/^\d{15}$/.test(imei))fail('Preencha o IMEI com 15 dígitos.');
+  if(!productId&&(!manualDevice.model||!manualDevice.color||!Object.hasOwn(deviceConditions,manualDevice.condition)))fail('Preencha modelo, cor e estado do aparelho.');
   const total=cents(read('total'),'Valor da venda'),method=read('method'),financed=read('terms')==='later';
   if(total<=0||!deviceMethods().some(([key])=>key===method))fail('Informe um valor positivo e uma forma de pagamento válida.');
   const clientId=read('client'),address=financed?read('address'):'',down=financed?cents(read('down'),'Entrada'):total;
@@ -2461,7 +2553,12 @@ const submits={
    const client=clientSnapshot(db,clientId);
    if(clientId&&!client.id)fail('Este cliente não está mais cadastrado.');
    const payments=[...(down>0?[{method,amount:down}]:[]),...(financed?[{method:'debt',amount:total-down}]:[])];
-   const sale=recordSale(db,user,{client,payments,cashShift:selectedShift(db),lines:[{custom:true,name:model+' · '+color+' · '+deviceConditions[condition],qty:1,price:total}],discount:0,surcharge:0});
+   const product=productId?db.products.find(p=>p.id===productId&&p.type==='product'&&p.deviceStock):null;
+   if(productId)version(product,productVersion);
+   const {model,color,condition}=product?.deviceStock||manualDevice;
+   const line=product?{productId:product.id,qty:1,price:total}:
+    {custom:true,name:model+' · '+color+' · '+deviceConditions[condition],qty:1,price:total};
+   const sale=recordSale(db,user,{client,payments,cashShift:selectedShift(db),lines:[line],discount:0,surcharge:0});
    sale.deviceSale={model,color,condition,imei,notes,address,installments:parcels};
    return sale.id;
   });
