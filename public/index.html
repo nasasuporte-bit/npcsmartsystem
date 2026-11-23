@@ -1509,7 +1509,8 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .npc-landing .npc-landing-brand { gap: .4rem; color: #20183a; font-size: 1.05rem; font-weight: 800; letter-spacing: .035em; }
 .npc-landing-brand b { color: #5834b1; }
 .npc-landing-mark { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; margin-right: .25rem; border-radius: .7rem; background: #2d214b; color: #fff; }
-.npc-landing .npc-landing-login { min-height: 44px; justify-content: center; padding: .55rem 1.55rem; border-radius: .75rem; background: #5934bd; color: #000; font-size: 1rem; font-weight: 800; }
+.npc-landing .npc-landing-login { min-height: 44px; justify-content: center; padding: .55rem 1.55rem; border-radius: .75rem; background: #5934bd; color: #fff; font-size: 1rem; font-weight: 800; }
+.npc-landing .npc-landing-login:is(:link, :visited, :hover, :focus-visible, :active) { color: #fff; }
 .npc-landing .npc-landing-login:hover { background: #46249e; }
 .npc-landing .npc-landing-login--hero {
   min-height: 56px;
@@ -1661,8 +1662,8 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   .npc-landing .npc-merchants { width: calc(100% - 2rem); }
   .npc-merchants-banner { min-height: 0; }
   .npc-merchants-copy { width: 100%; }
-  .npc-merchants-visual { position: relative; width: 100%; aspect-ratio: 2 / 1; }
-  .npc-merchants-visual img { object-position: right 43%; }
+  .npc-merchants-visual { position: relative; width: 100%; aspect-ratio: 3 / 2; }
+  .npc-merchants-visual img { object-position: right center; }
   .npc-merchants-visual::after { background: linear-gradient(180deg, #220f58, transparent 26%); }
   .npc-merchants-features { grid-template-columns: 1fr; }
 }
@@ -1676,7 +1677,7 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
     <h1 id="npc-landing-title">Da bancada ao caixa.<br><em>Tudo no NPC SMART.</em></h1>
     <p>Gerencie ordens de serviço, estoque e vendas de aparelhos pelo computador ou celular.</p>
     <a class="npc-landing-login npc-landing-login--hero" href="/?login=1">Fazer login</a>
-    <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do NPC SMART em um computador e um celular">
+    <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do painel do NPC SMART no computador e da venda de aparelhos no celular">
       <div class="npc-landing-orbit" aria-hidden="true"></div>
       <div class="npc-landing-laptop" aria-hidden="true">
         <div class="npc-landing-monitor">
@@ -1697,9 +1698,9 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
       <div class="npc-landing-phone" aria-hidden="true">
         <div class="npc-landing-phone-screen">
           <b>NPC SMART</b>
-          <strong>Ordens de serviço</strong>
-          <div><small>OS 0284</small><b>Troca de tela</b><span>Em andamento</span></div>
-          <div><small>OS 0281</small><b>Diagnóstico</b><span>Pronto</span></div>
+          <strong>Venda de aparelhos</strong>
+          <div><small>Aparelhos disponíveis</small><b>Smartphone X7</b><span>R$ 2.499,00</span></div>
+          <div><b>Smartphone A5</b><span>R$ 1.699,00</span></div>
         </div>
       </div>
     </figure>
@@ -1713,7 +1714,7 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
         <a class="npc-merchants-contact" href="https://wa.me/5531981172771?text=Ol%C3%A1!%20Tenho%20uma%20loja%20e%20gostaria%20de%20conhecer%20o%20sistema%20NPC%20SMART." target="_blank" rel="noopener noreferrer">Conhecer pelo WhatsApp</a>
       </div>
       <div class="npc-merchants-visual" aria-hidden="true">
-        <img src="/npc-smart-lojistas.webp" alt="" width="1120" height="746" loading="lazy" decoding="async">
+        <img src="/npc-smart-lojistas-vendas.webp" alt="" width="1120" height="746" loading="lazy" decoding="async">
       </div>
     </div>
     <div class="npc-merchants-features">
