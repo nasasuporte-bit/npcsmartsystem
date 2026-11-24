@@ -1466,7 +1466,7 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   .auth-wrap,
   :root[data-theme="light"] .auth-wrap,
   :root[data-theme="ocean"] .auth-wrap {
-    background-image: linear-gradient(180deg, #03142119, #03142166), url("/fundo-login.webp");
+    background-image: linear-gradient(180deg, #03142180, #031421b3), url("/fundo-login.webp");
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
@@ -1667,6 +1667,22 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   .npc-merchants-visual::after { background: linear-gradient(180deg, #220f58, transparent 26%); }
   .npc-merchants-features { grid-template-columns: 1fr; }
 }
+.auth-wrap--entry{position:relative;align-items:center}
+.auth-card--entry .brand{margin-bottom:20px}
+.auth-card--entry .brand small{font-size:13px}
+.auth-card--entry h1{font-size:24px;line-height:1.2;margin:0 0 14px}
+.auth-card--entry label{margin:12px 0 0}
+.auth-card--entry .auth-link{color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.auth-card--entry .auth-recover{display:inline-block;margin-top:10px}
+.auth-card--entry .auth-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin-top:16px}
+.auth-card--entry .auth-footer .auth-link{font-weight:600}
+.auth-card--entry .auth-footer button{width:auto;margin:0}
+.auth-password{position:relative}
+.auth-password input{padding-right:88px}
+.auth-card--entry .auth-password button{position:absolute;right:4px;bottom:3px;min-height:34px;width:auto;margin:0;padding:4px 10px}
+
+.auth-card--entry .auth-text-button{display:inline-flex;align-items:center;width:auto;min-height:32px;margin:0;padding:2px 0;border:0;background:none;box-shadow:none}
+.auth-card--entry .auth-recover{margin-top:4px}
 </style></head><body><div id="app">
 <main class="npc-landing">
   <header class="npc-landing-header">
@@ -2038,17 +2054,24 @@ function clientSnapshot(db,value){
 }
 function renderAuth(mode='login'){
  resetAccess();
- const registering=mode==='register',recovering=mode==='recover',changing=mode==='password';
+ const registering=mode==='register',recovering=mode==='recover',changing=mode==='password',loggingIn=mode==='login';
  const title=registering?'Criar conta':recovering?'Recuperar senha':changing?'Criar nova senha':'Entrar no sistema';
- $('#app').innerHTML='<div class="auth-wrap"><div class="auth-card"><div class="brand">NPC SMART<small>Gestão online · acesso por empresa</small></div><h2>'+title+'</h2>'+
+ const passwordField=field('password',changing?'Nova senha':'Senha','','password','id="entry-password" required '+(loggingIn?'':'minlength="8" ')+'autocomplete="'+(registering||changing?'new-password':'current-password')+'"');
+ $('#app').innerHTML='<main class="auth-wrap auth-wrap--entry"><section class="auth-card auth-card--entry"><div class="brand">NPC SMART<small>Gestão online para empresas</small></div><h1>'+title+'</h1>'+
  (registering?'<p class="help">Confirme seu e-mail e solicite a liberação pelo WhatsApp. Sua empresa começa com um ambiente vazio.</p>':'')+
  '<form data-form="'+(registering?'register':recovering?'recover':changing?'password':'login')+'">'+
  (registering?field('name','Seu nome','','text','required maxlength="100" autocomplete="name"'):'')+
  (!changing?field('email','E-mail','','email','required autocomplete="email" maxlength="254"'):'')+
- (!recovering?field('password',changing?'Nova senha':'Senha','','password','required minlength="8" autocomplete="'+(registering||changing?'new-password':'current-password')+'"'):'')+
+ (recovering?'':'<div class="auth-password">'+passwordField+button('toggle-password','Mostrar')+'</div>')+
+ (loggingIn?'<button class="auth-link auth-recover auth-text-button" type="button" data-action="show-recover">Esqueci minha senha</button>':'')+
  (registering||changing?field('confirmation','Confirmar senha','','password','required minlength="8" autocomplete="new-password"'):'')+
  '<button type="submit" class="primary">'+(registering?'Criar conta':recovering?'Enviar recuperação':changing?'Salvar nova senha':'Entrar')+'</button><p class="form-error" role="alert"></p></form>'+
- '<div class="auth-links">'+(registering||recovering||changing?button('show-login','Voltar para entrar'):button('show-register','Criar conta')+button('show-recover','Esqueci minha senha'))+button('auth-theme','Alterar tema')+'</div><a class="release-link" href="https://wa.me/'+RELEASE_PHONE+'?text='+encodeURIComponent('Olá! Preciso de suporte no sistema NPC SMART.')+'" target="_blank" rel="noopener noreferrer">Fale conosco pelo WhatsApp</a><p class="subtle">Seus dados são salvos online. Cada conta aprovada administra somente a própria empresa.</p></div></div>';
+ '<div class="auth-footer">'+(loggingIn?'<button class="auth-link auth-text-button" type="button" data-action="show-register">Criar conta</button>':button('show-login',registering?'Já tem conta? Entrar':'Voltar para entrar','','auth-link auth-text-button'))+
+ button('auth-theme','Alterar tema')+'</div>'+
+ (loggingIn?'<a class="release-link" href="https://wa.me/'+RELEASE_PHONE+'?text='+encodeURIComponent('Olá! Preciso de suporte no sistema NPC SMART.')+'" target="_blank" rel="noopener noreferrer">Fale conosco pelo WhatsApp</a>':'')+
+ '</section></main>';
+ const toggle=$('[data-action="toggle-password"]');
+ toggle?.setAttribute('aria-controls','entry-password');
 }
 function renderPending(user){
  resetAccess();pendingUserId=user.id;
@@ -2871,6 +2894,11 @@ submits.password=async form=>{
  await api('/auth/v1/user',{method:'PUT',body:{password}});await authExit();toast('Senha atualizada. Entre novamente.');
 };
 actions['show-register']=()=>renderAuth('register');
+actions['toggle-password']=el=>{
+ const input=$('#entry-password'),show=input.type==='password';
+ input.type=show?'text':'password';
+ el.textContent=show?'Ocultar':'Mostrar';
+};
 actions['show-login']=authExit;
 actions['show-recover']=()=>renderAuth('recover');
 actions.lock=authExit;actions.logout=async()=>{if(confirm('Sair do sistema?'))await authExit();};
