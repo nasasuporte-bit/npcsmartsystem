@@ -12,6 +12,20 @@
 @media(max-width:640px){.tracking-page{padding:12px}.tracking-header{align-items:flex-start;flex-direction:column;margin:10px 4px 16px}.tracking-details{grid-template-columns:1fr}.tracking-card{border-radius:14px}.tracking-title{align-items:flex-start;flex-direction:column}.tracking-steps li:not(:last-child)::after{height:24px}}
 
 .choice{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}.choice input{width:auto;min-width:18px;accent-color:var(--gold)}
+
+.daily-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:4px 0 20px}
+.daily-heading h2{margin:0;font-size:clamp(1.65rem,3vw,2.3rem);letter-spacing:-.035em}
+.daily-heading p{margin:4px 0;color:var(--text2)}
+.daily-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,195px),1fr));gap:12px;margin-bottom:18px}
+button.daily-card{display:grid;gap:8px;text-align:left;border:1px solid var(--border);border-radius:14px;padding:16px 20px;background:var(--surface);color:var(--text)}
+.daily-card span{font-size:14px;color:var(--text2)}
+.daily-card strong{font-size:24px;color:var(--gold-light)}
+.daily-card:focus-visible,.nav button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.daily-empty{padding:12px 16px;color:var(--text2)}
+.nav button[data-action="nav"]{font-size:12px;line-height:1.2;font-weight:600}
+.nav button .icon::before{width:22px;height:22px}
+.nav button[data-id="home"]{--nav-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linejoin%3D%22round%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22m3%2010%209-7%209%207v10h-6v-7H9v7H3z%22/%3E%3C/svg%3E")}
+.nav button[data-id="devices"]{--nav-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linejoin%3D%22round%22%20stroke-linecap%3D%22round%22%3E%3Crect%20x%3D%226%22%20y%3D%222%22%20width%3D%2212%22%20height%3D%2220%22%20rx%3D%223%22/%3E%3Cpath%20d%3D%22M10%205h4m-3%2013h2%22/%3E%3C/svg%3E")}
 </style><style id="npc-modern">
 /* NPC SMART — interface preto grafite e dourado */
 @media screen {
@@ -1680,7 +1694,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const sum=values=>values.reduce((a,b)=>a+b,0);
 const methods={cash:'Dinheiro',pix:'Pix',debit:'Cartão de débito',credit:'Cartão de crédito',other:'Cheque / outras (histórico)',debt:'Fiado'};
 const states=['Recebido','Em diagnóstico','Aguardando aprovação','Aguardando peça','Em reparo','Pronto','Entregue','Cancelado'];
-const nav=[['home','⌂','Início'],['products','📦','Produtos'],['sales','🛒','Vendas'],['devices','▣','Venda de aparelho'],['clients','👤','Clientes'],['queries','🔍','Consultas'],['cash','💵','Caixa'],['cancellations','🚫','Canc. Venda'],['charts','📊','Gráficos'],['orders','🔧','OS'],['labels','🏷','Etiquetas'],['settings','⚙','Ajustes']];
+const nav=[['home','⌂','Início'],['products','📦','Produtos'],['sales','🛒','Vendas'],['devices','▣','Venda de celulares'],['clients','👤','Clientes'],['queries','🔍','Consultas'],['cash','💵','Caixa'],['cancellations','🚫','Cancelamentos'],['charts','📊','Gráficos'],['orders','🔧','Ordens de serviço'],['labels','🏷','Etiquetas'],['settings','⚙','Ajustes']];
 let data,session=null,tab='home',subtab='sales',filters={},cart=[],selectedLabels=new Set(),toastTimer,stockShown=false;
 let dialogState=null;
 const THEME_KEY='npcsmart.offline.theme.v1';
@@ -2032,14 +2046,14 @@ function render(){
  if(!session){renderAuth();return;}
  const visibleNav=nav.filter(([key])=>key==='devices'?session.role==='admin':key==='home'||session.platformAdmin||session.role==='admin'&&key==='settings'||session.permissions?.[key]);
  if(!visibleNav.some(([key])=>key===tab))tab=visibleNav.find(([key])=>key!=='settings')?.[0]||'settings';
- $('#app').innerHTML='<header class="topbar"><div class="brand">'+esc(data.company.name)+'<small>Estoque, vendas e assistência</small></div><div class="top-actions"><span class="user">Operador <b>'+esc(session.name)+'</b></span>'+button('refresh-online','Atualizar')+button('lock','Bloquear')+button('logout','Sair','','danger')+'</div></header><nav class="nav" aria-label="Menu principal">'+visibleNav.map(([key,icon,title])=>'<button type="button" data-action="nav" data-id="'+key+'" class="'+(tab===key?'active':'')+'" aria-current="'+(tab===key?'page':'false')+'"><span class="icon" aria-hidden="true">'+icon+'</span>'+title+'</button>').join('')+'</nav><main id="main"></main><footer class="statusbar"><span>Dados online · '+esc(session.role==='admin'?'Administrador':'Vendedor com acesso limitado')+'</span><span>'+(data.demo?'Cadastros iniciais de demonstração · ':'')+'Última gravação '+new Date(data.updatedAt).toLocaleString('pt-BR')+'</span></footer>';
+ $('#app').innerHTML='<header class="topbar"><div class="brand">'+esc(data.company.name)+'<small>Estoque, vendas e assistência</small></div><div class="top-actions"><span class="user">Operador <b>'+esc(session.name)+'</b></span>'+button('refresh-online','Atualizar')+button('lock','Bloquear')+button('logout','Sair','','danger')+'</div></header><nav class="nav" aria-label="Menu principal">'+visibleNav.filter(([key])=>key!=='cancellations'||!visibleNav.some(([id])=>id==='sales')).map(([key,icon,title])=>'<button type="button" data-action="nav" data-id="'+key+'" class="'+(tab===key?'active':'')+'" aria-current="'+(tab===key?'page':'false')+'"><span class="icon" aria-hidden="true">'+icon+'</span>'+title+'</button>').join('')+'</nav><main id="main"></main><footer class="statusbar"><span>Dados online · '+esc(session.role==='admin'?'Administrador':'Vendedor com acesso limitado')+'</span><span>'+(data.demo?'Cadastros iniciais de demonstração · ':'')+'Última gravação '+new Date(data.updatedAt).toLocaleString('pt-BR')+'</span></footer>';
  renderMain();
 }
 function renderMain(restore=null){
  requireFeature(tab);
  const title=nav.find(n=>n[0]===tab)?.[2]||'NPC SMART';
- const extra=tab==='devices'?button('device-new','Nova venda de aparelho','','primary'):tab==='orders'?button('new-order','Nova OS','','primary'):['products','clients'].includes(tab)?button('new-record','Cadastrar','','primary'):'';
- $('#main').innerHTML='<div class="section-head"><h2>'+esc(tab==='orders'?'Ordens de Serviço':title)+'</h2>'+extra+'</div>'+
+ const extra=tab==='sales'&&canSeeDashboardModule('cancellations')?button('nav','Cancelamentos de vendas','cancellations'):tab==='devices'?button('device-new','Nova venda de aparelho','','primary'):tab==='orders'?button('new-order','Nova OS','','primary'):['products','clients'].includes(tab)?button('new-record','Cadastrar','','primary'):'';
+ $('#main').innerHTML=(tab==='home'?'':'<div class="section-head"><h2>'+esc(tab==='orders'?'Ordens de Serviço':title)+'</h2>'+extra+'</div>')+
  (session.approvalStatus==='trial'?'<p class="notice trial-banner">Seu teste grátis termina em '+esc(new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(session.permissions.trial_expires_at)))+'.</p>':'')+views[tab]();
  if(restore){const target=$('[data-filter="'+restore.key+'"]');target?.focus();if(target&&typeof target.setSelectionRange==='function')target.setSelectionRange(restore.pos,restore.pos);}
 }
@@ -2065,8 +2079,16 @@ function homeDashboard(){
  const maximum=Math.max(1,...series.map(([,value])=>value));
  const total=sum(series.map(([,value])=>value));
  const activeOrders=seesOrders?data.orders.filter(order=>!['Entregue','Cancelado'].includes(order.status)).length:0;
- const links=[canSeeDashboardModule('sales')?button('nav','Vendas','sales','primary'):'',seesOrders?button('nav','Ordens de serviço','orders'):'',seesCash?button('nav','Caixa','cash'):''].join('');
- return '<div class="npc-hero"><div><h3>Visão geral</h3><p>'+esc(date(today()))+'</p></div><div class="toolbar">'+links+'</div></div>'+deviceDueAlerts()+
+ const links=[seesOrders?button('new-order','Nova OS','','primary'):'',canSeeDashboardModule('sales')?button('nav','Registrar venda','sales'):'',seesCash?button('nav','Caixa','cash'):''].join('');
+ const orders=seesOrders?attentionOrders():[];
+ const cards=[];
+ if(seesOrders)cards.push(dailyCard('orders','OS para entregar hoje',number(orders.filter(o=>o.expected===today()).length)));
+ if(seesCash)cards.push(dailyCard('receipts','Vendas recebidas hoje',money(salesByDate.get(today())||0)));
+ if(session.role==='admin')cards.push(dailyCard('overdue','Parcelas de celulares vencidas',number(upcomingParcels().filter(([,p])=>p.due<today()).length)));
+ return '<div class="daily-heading"><div><h2>Visão geral</h2><p>'+esc(date(today()))+'</p></div><div class="toolbar">'+links+'</div></div>'+
+  '<div class="daily-cards">'+cards.join('')+'</div>'+
+  (seesOrders?'<section class="panel"><h3>Ordens que precisam de atenção</h3>'+(orders.length?attentionTable(orders):'<p class="help">Nenhuma ordem atrasada ou com entrega para hoje.</p>')+'</section>':'')+
+  deviceDueAlerts()+
   (seesCash?'<section class="panel"><div class="npc-section-head"><h3>Recebimentos de vendas</h3><div class="toolbar">'+[[1,'Hoje'],[7,'7 dias'],[30,'30 dias']].map(([n,label])=>button('home-period',label,String(n),days===n?'primary':'')).join('')+'</div></div><div class="summary">'+metric('Vendas recebidas',money(total))+metric('Caixa atual',selectedShift(data)?'Aberto':'Fechado')+(seesOrders?metric('OS em andamento',number(activeOrders)):'')+'</div><div class="npc-trend" role="group" aria-label="Recebimentos diários">'+series.map(([day,value])=>'<span role="img" aria-label="'+esc(date(day)+' '+money(value))+'" title="'+esc(date(day)+' · '+money(value))+'" style="--height:'+Math.max(1,Math.round(100*value/maximum))+'%"></span>').join('')+'</div></section>':seesOrders?'<div class="summary">'+metric('OS em andamento',number(activeOrders))+'</div>':'');
 }
 const views={
@@ -2313,21 +2335,41 @@ function makeDeviceInstallments(balance,count,first){
 function deviceParcelPayment(sale,parcel){
  return sale.payments.find(p=>p.kind==='receipt'&&p.deviceInstallment===parcel.number);
 }
-function deviceDueAlerts(){
- if(session.role!=='admin')return '';
+function upcomingParcels(){
+ if(session.role!=='admin')return [];
  const nowDate=today(),limit=new Date(nowDate+'T12:00:00Z');
  limit.setUTCDate(limit.getUTCDate()+7);
  const through=limit.toISOString().slice(0,10);
- const rows=data.sales.filter(s=>s.deviceSale&&s.cancelled<s.total).flatMap(s=>
+ return data.sales.filter(s=>s.deviceSale&&s.cancelled<s.total).flatMap(s=>
   s.deviceSale.installments.filter(p=>p.due<=through&&!deviceParcelPayment(s,p)).map(p=>[s,p])
  ).sort((a,b)=>a[1].due.localeCompare(b[1].due));
+}
+function dailyCard(key,label,value){
+ return button('daily-detail','<span>'+esc(label)+'</span><strong>'+esc(value)+'</strong>',key,'daily-card');
+}
+function attentionOrders(){
+ return data.orders.filter(o=>o.expected && o.expected<=today() && !['Entregue','Cancelado'].includes(o.status))
+  .sort((a,b)=>a.expected.localeCompare(b.expected)||b.number.localeCompare(a.number));
+}
+function attentionTable(rows){
+ return table(['OS','Aparelho','Situação','Entrega',''],rows.map(o=>[
+  esc(o.number),esc(o.device),badge(o.status),esc(date(o.expected)),button('edit-order','Abrir',o.id,'small')
+ ]));
+}
+function parcelTable(rows){
+ return table(['Vencimento','Cliente','Aparelho','Parcela','Valor',''],rows.map(([s,p])=>[
+  date(p.due),esc(s.client.name),esc(s.deviceSale.model),String(p.number),money(p.amount),button('device-details','Abrir venda',s.id,'small')
+ ]));
+}
+function deviceDueAlerts(){
+ if(session.role!=='admin')return '';
+ const rows=upcomingParcels(),nowDate=today();
+ if(!rows.length)return '<p class="panel daily-empty">Nenhuma parcela de celular vencida ou a vencer nos próximos 7 dias.</p>';
  const overdue=rows.filter(([,p])=>p.due<nowDate).length;
  const dueToday=rows.filter(([,p])=>p.due===nowDate).length;
  return '<section class="panel"><div class="npc-section-head"><h3>Parcelas de aparelhos</h3>'+button('nav','Ver vendas de aparelhos','devices','small')+'</div>'+
   '<div class="summary">'+metric('Vencidas',number(overdue))+metric('Vencem hoje',number(dueToday))+metric('Próximos 7 dias',number(rows.length-overdue-dueToday))+'</div>'+
-  (rows.length?table(['Vencimento','Cliente','Aparelho','Parcela','Valor',''],rows.slice(0,8).map(([s,p])=>[
-   date(p.due),esc(s.client.name),esc(s.deviceSale.model),String(p.number),money(p.amount),button('device-details','Abrir venda',s.id,'small')
-  ])):'<p class="help">Nenhuma parcela vencida ou a vencer nos próximos sete dias.</p>')+'</section>';
+  parcelTable(rows)+'</section>';
 }
 function deviceStockCards(rows){
  return '<div class="device-stock-grid">'+rows.map(product=>{
@@ -2466,6 +2508,16 @@ const actions={
  'device-receive'(el){deviceReceiveDialog(el.dataset.id);},
  'continue-login'(){stockShown=true;renderAuth();},
  nav(el){if(!nav.some(([key])=>key===el.dataset.id))return;requireFeature(el.dataset.id);tab=el.dataset.id;subtab='sales';render();$('#main').classList.add('npc-view-enter');},
+ 'daily-detail'(el){
+  if(el.dataset.id==='orders' && canSeeDashboardModule('orders')){
+   openDialog('OS para entregar hoje',attentionTable(attentionOrders().filter(o=>o.expected===today())));
+  }else if(el.dataset.id==='receipts' && canSeeDashboardModule('cash')){
+   const entries=periodCashEntries(today(),today()).filter(e=>cashEntryGroup(e)==='sales');
+   openDialog('Vendas recebidas hoje',table(['Descrição','Forma','Valor'],entries.map(e=>[esc(e.description||'Recebimento'),esc(methods[e.method]||e.method),money(e.amount)])));
+  }else if(el.dataset.id==='overdue' && session.role==='admin'){
+   openDialog('Parcelas de celulares vencidas',parcelTable(upcomingParcels().filter(([,p])=>p.due<today())));
+  }
+ },
  'home-period'(el){requireFeature('cash');if(!['1','7','30'].includes(el.dataset.id))return;filters.homeDays=Number(el.dataset.id);renderMain();$('#main .npc-trend')?.classList.add('npc-view-enter');},
  close(){if($('form[data-saving="true"]',$('#modal-body'))){toast('Aguarde a gravação terminar.');return;}if($('#modal').open)closeDialog();else renderMain();},
  lock(){renderAuth();},
