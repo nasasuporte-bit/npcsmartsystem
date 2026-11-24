@@ -2237,6 +2237,7 @@ function checkoutDialog(orderId){
  renderPayments();
 }
 function renderPayments(){
+ dialogState.balancePaymentIndex=1;
  $('#payment-rows').innerHTML=dialogState.pays.map((p,i)=>'<div class="pay-row"><select data-pay-method="'+i+'" aria-label="Forma de pagamento '+(i+1)+'">'+options(Object.entries(methods).filter(([m])=>m!=='other'),p.method)+'</select><input data-pay-amount="'+i+'" value="'+dec(p.amount)+'" inputmode="decimal" aria-label="Valor do pagamento '+(i+1)+'">'+button('remove-payment','×',String(i),'small')+'</div>').join('');
  updatePaymentTotal();
 }
@@ -2244,6 +2245,14 @@ function updatePaymentTotal(){
  const form=$('[data-form="checkout"]');if(!form)return;
  try{
   const total=dialogState.gross+cents(form.elements.surcharge.value)-cents(form.elements.discount.value);
+  if(dialogState.pays.length===2){
+   const index=dialogState.balancePaymentIndex;
+   const remainder=Math.max(0,total-dialogState.pays[1-index].amount);
+   const input=form.querySelector('[data-pay-amount="'+index+'"]');
+   dialogState.pays[index].amount=remainder;
+   input.value=dec(remainder);
+   input.setCustomValidity('');
+  }
   dialogState.total=total;$('#checkout-total').textContent=money(total);
   const difference=total-sum(dialogState.pays.map(p=>p.amount));
   $('#payment-balance').textContent=difference===0?'Pagamentos conferidos.':difference>0?'Falta distribuir '+money(difference)+'.':'Os pagamentos superam o total em '+money(-difference)+'.';
@@ -3306,7 +3315,11 @@ document.addEventListener('input',event=>{
    el.closest('tr').children[3].textContent=money(line.qty*line.price);updateOrderTotal();
   }
   if(el.dataset.payAmount!==undefined){
-   dialogState.pays[Number(el.dataset.payAmount)].amount=cents(el.value,'Pagamento');el.setCustomValidity('');updatePaymentTotal();
+   const index=Number(el.dataset.payAmount);
+   dialogState.pays[index].amount=cents(el.value,'Pagamento');
+   if(dialogState.pays.length===2)dialogState.balancePaymentIndex=1-index;
+   el.setCustomValidity('');
+   updatePaymentTotal();
   }
   if(el.closest('[data-form="order"]')&&['labor','discount','surcharge'].includes(el.name))updateOrderTotal();
   if(el.closest('[data-form="checkout"]')&&['discount','surcharge'].includes(el.name))updatePaymentTotal();
