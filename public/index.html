@@ -1529,7 +1529,16 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .npc-landing-hero h1 em { color: #5834b1; font-style: normal; }
 .npc-landing .npc-landing-hero > p { max-width: 37rem; margin: 1rem auto 1.75rem; color: #534a68; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.6; }
 .npc-landing-hero-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px}
-.npc-landing-hero-actions .npc-landing-sign-in{color:#46249e;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:12px}
+.npc-landing .npc-landing-hero-actions .npc-landing-login--hero{margin:0}
+.npc-landing-hero-actions .npc-landing-sign-in{
+  display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+  padding:.55rem 1.55rem;border:1px solid #bfa9e8;border-radius:.75rem;
+  color:#46249e;font-size:1rem;font-weight:700;text-decoration:none;
+}
+.npc-landing-hero-actions .npc-landing-sign-in:hover{background:#eee6ff}
+.npc-landing .npc-landing-hero > .npc-landing-trial-terms{
+  margin:.7rem auto 1.3rem;font-size:.95rem;
+}
 .npc-landing-devices { isolation: isolate; container-type: inline-size; position: relative; width: min(100%, 790px); aspect-ratio: 2.1; margin: .35rem 0 0; }
 .npc-landing-orbit { position: absolute; z-index: -1; inset: 7% 1% 1%; border-radius: 45% 45% 12% 12%; background: radial-gradient(ellipse at 47% 48%, #d5c4ff 0, #ede4ff 51%, transparent 74%); }
 .npc-landing-laptop { position: absolute; inset: 0 11% 4% 2%; display: flex; flex-direction: column; }
@@ -1702,6 +1711,7 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
       <a class="npc-landing-login npc-landing-login--hero" href="/?teste=1">Testar grátis por 5 dias</a>
       <a class="npc-landing-sign-in" href="/?login=1">Fazer login</a>
     </div>
+    <p class="npc-landing-trial-terms">Sem cartão de crédito e sem cobrança automática.</p>
     <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do painel do NPC SMART no computador e da venda de aparelhos no celular">
       <div class="npc-landing-orbit" aria-hidden="true"></div>
       <div class="npc-landing-laptop" aria-hidden="true">
