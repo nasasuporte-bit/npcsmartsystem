@@ -1517,21 +1517,30 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .npc-landing .npc-landing-login:is(:link, :visited, :hover, :focus-visible, :active) { color: #fff; }
 .npc-landing .npc-landing-login:hover { background: #46249e; }
 .npc-landing a:focus-visible { outline: 3px solid #9369df; outline-offset: 4px; }
-.npc-landing-hero { display: grid; justify-items: center; padding: clamp(2.6rem, 6vw, 5.4rem) 1rem 0; text-align: center; }
-.npc-landing .npc-landing-eyebrow { margin: 0 0 .8rem; color: #5834b1; font-size: .95rem; font-weight: 750; }
-.npc-landing .npc-landing-hero h1 {
-  max-width: 19ch;
-  margin: 0;
-  color: #20183a;
-  font-size: clamp(2.45rem, 5.6vw, 4.9rem);
-  line-height: 1.04;
-  letter-spacing: -.055em;
-  text-wrap: balance;
+.npc-landing-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  width: min(calc(100% - 2rem), 1180px);
+  margin: 1.25rem auto 0;
+  border-radius: 1.5rem;
+  background: #200c55;
 }
-.npc-landing-hero h1 em { color: #5834b1; font-style: normal; }
-.npc-landing .npc-landing-description { max-width: 36rem; margin: 1.1rem auto 1.6rem; color: #534a68; font-size: clamp(1rem, 2vw, 1.15rem); line-height: 1.6; }
-.npc-landing .npc-landing-primary { min-height: 52px; padding: .8rem 1.6rem; }
-.npc-landing .npc-landing-trial-terms { margin: .7rem 0 0; color: #534a68; font-size: .9rem; line-height: 1.5; }
+.npc-landing .npc-landing-eyebrow { margin: 0 0 .8rem; color: #e6ceff; font-weight: 700; }
+.npc-landing .npc-hero-copy h1 em { color: #e4c8ff; font-style: normal; }
+.npc-hero-copy { position: relative; z-index: 1; width: 54%; padding: clamp(2rem, 4.5vw, 4rem); }
+.npc-landing .npc-landing-hero h1 { margin: 0; color: white; font-size: clamp(2.2rem, 4.3vw, 4rem); line-height: 1.04; letter-spacing: -.045em; text-wrap: balance; }
+.npc-landing .npc-landing-description { margin: 1rem 0 1.5rem; color: #efe6ff; font-size: 1.08rem; line-height: 1.5; }
+.npc-landing .npc-landing-primary { min-height: 50px; padding: .75rem 1.5rem; }
+.npc-landing .npc-landing-hero .npc-landing-primary { background: #fff; color: #432584; }
+.npc-landing .npc-landing-trial-terms { margin: .7rem 0 0; color: #ece2ff; font-size: .9rem; }
+.npc-hero-product { position: absolute; right: 0; width: 57%; height: 100%; object-fit: cover; object-position: right center; mask-image: linear-gradient(90deg, transparent, black 24%); }
+@media (max-width: 760px) {
+  .npc-hero-copy { width: 100%; padding: 1.75rem 1.45rem .4rem; }
+  .npc-hero-product { position: static; width: 100%; height: clamp(185px, 52vw, 300px); object-position: right 50%; mask-image: linear-gradient(180deg, transparent, black 18%); }
+}
 .npc-landing-preview { width: min(100%, 1040px); margin: clamp(1.6rem, 4vw, 3rem) 0 0; }
 .npc-landing-preview img {
   display: block;
@@ -1621,18 +1630,14 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
     <a class="npc-landing-login" href="/?login=1">Entrar</a>
   </header>
   <section class="npc-landing-hero" aria-labelledby="npc-landing-title">
-    <p class="npc-landing-eyebrow">Da bancada ao caixa</p>
-    <h1 id="npc-landing-title">Gestão para lojas de celulares e <em>assistências técnicas</em></h1>
-    <p class="npc-landing-description">Acompanhe ordens de serviço, controle o estoque de aparelhos e registre vendas à vista ou parceladas em um só sistema.</p>
-    <a class="npc-landing-login npc-landing-primary" href="/?teste=1">Testar grátis por 5 dias</a>
-    <p class="npc-landing-trial-terms">Sem cartão de crédito e sem cobrança automática.</p>
-    <figure class="npc-landing-preview">
-      <picture>
-        <source media="(max-width: 700px)" srcset="/npc-smart-os-mobile.webp" width="760" height="760">
-        <img src="/npc-smart-os-desktop.webp" width="1240" height="552" alt="Tela de ordens de serviço do NPC SMART com indicadores de andamento, prazos e prioridades" decoding="async">
-      </picture>
-      <figcaption>Tela do NPC SMART com dados fictícios.</figcaption>
-    </figure>
+    <div class="npc-hero-copy">
+      <p class="npc-landing-eyebrow">Da bancada ao caixa</p>
+      <h1 id="npc-landing-title">Gestão para lojas de celulares e <em>assistências técnicas</em></h1>
+      <p class="npc-landing-description">Acompanhe ordens de serviço, controle o estoque de aparelhos e registre vendas à vista ou parceladas em um só sistema.</p>
+      <a class="npc-landing-login npc-landing-primary" href="/?teste=1">Testar grátis por 5 dias</a>
+      <p class="npc-landing-trial-terms">Sem cartão de crédito e sem cobrança automática.</p>
+    </div>
+    <img class="npc-hero-product" src="/npc-smart-lojistas-vendas.webp" width="1120" height="746" alt="Ilustração da venda de aparelhos pelo celular no NPC SMART" fetchpriority="high">
   </section>
   <section class="npc-merchants" aria-labelledby="npc-merchants-title">
     <h2 id="npc-merchants-title">O que você pode fazer no NPC SMART</h2>
@@ -1641,6 +1646,13 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
       <article><h3>Estoque de aparelhos</h3><p>Cadastre modelo, cor, estado e foto. Ao vender um aparelho pelo estoque, a quantidade é atualizada automaticamente.</p></article>
       <article><h3>Vendas e caixa</h3><p>Registre vendas à vista ou parceladas, emita o cupom e acompanhe o que já entrou no caixa e o que falta receber.</p></article>
     </div>
+    <figure class="npc-landing-preview">
+      <picture>
+        <source media="(max-width: 700px)" srcset="/npc-smart-os-mobile-hd.webp" width="760" height="760">
+        <img src="/npc-smart-os-desktop.webp" srcset="/npc-smart-os-desktop.webp 1x, /npc-smart-os-desktop-hd.webp 2x" width="1240" height="552" alt="Tela de ordens de serviço do NPC SMART com indicadores de andamento, prazos e prioridades" decoding="async">
+      </picture>
+      <figcaption>Tela do NPC SMART com dados fictícios.</figcaption>
+    </figure>
     <section class="npc-landing-trial" aria-labelledby="npc-trial-title">
       <h2 id="npc-trial-title">Testar o NPC SMART na sua empresa</h2>
       <p>Seus cinco dias grátis começam após a confirmação do e-mail.</p>
