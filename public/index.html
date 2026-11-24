@@ -1524,6 +1524,8 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .npc-landing .npc-landing-hero h1 { margin: 0; font-size: clamp(2.25rem, 5.4vw, 5rem); line-height: 1.03; letter-spacing: -.059em; color: #20183a; }
 .npc-landing-hero h1 em { color: #5834b1; font-style: normal; }
 .npc-landing .npc-landing-hero > p { max-width: 37rem; margin: 1rem auto 1.75rem; color: #534a68; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.6; }
+.npc-landing-hero-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px}
+.npc-landing-hero-actions .npc-landing-sign-in{color:#46249e;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:12px}
 .npc-landing-devices { isolation: isolate; container-type: inline-size; position: relative; width: min(100%, 790px); aspect-ratio: 2.1; margin: .35rem 0 0; }
 .npc-landing-orbit { position: absolute; z-index: -1; inset: 7% 1% 1%; border-radius: 45% 45% 12% 12%; background: radial-gradient(ellipse at 47% 48%, #d5c4ff 0, #ede4ff 51%, transparent 74%); }
 .npc-landing-laptop { position: absolute; inset: 0 11% 4% 2%; display: flex; flex-direction: column; }
@@ -1673,16 +1675,16 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
 .auth-card--entry h1{font-size:24px;line-height:1.2;margin:0 0 14px}
 .auth-card--entry label{margin:12px 0 0}
 .auth-card--entry .auth-link{color:var(--text);text-decoration:underline;text-underline-offset:3px}
-.auth-card--entry .auth-recover{display:inline-block;margin-top:10px}
+.auth-card--entry .auth-recover{display:inline-flex;align-items:center;min-height:32px;margin-top:4px}
 .auth-card--entry .auth-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin-top:16px}
 .auth-card--entry .auth-footer .auth-link{font-weight:600}
 .auth-card--entry .auth-footer button{width:auto;margin:0}
 .auth-password{position:relative}
 .auth-password input{padding-right:88px}
 .auth-card--entry .auth-password button{position:absolute;right:4px;bottom:3px;min-height:34px;width:auto;margin:0;padding:4px 10px}
-
-.auth-card--entry .auth-text-button{display:inline-flex;align-items:center;width:auto;min-height:32px;margin:0;padding:2px 0;border:0;background:none;box-shadow:none}
-.auth-card--entry .auth-recover{margin-top:4px}
+.trial-features{padding-left:19px;color:var(--text2);line-height:1.6}
+.trial-terms{font-size:13px;color:var(--text2);line-height:1.5}
+.trial-banner{margin:0 0 14px}
 </style></head><body><div id="app">
 <main class="npc-landing">
   <header class="npc-landing-header">
@@ -1692,7 +1694,10 @@ button[type="submit"]::before { content:""; width:16px; height:16px; flex:0 0 16
   <section class="npc-landing-hero" aria-labelledby="npc-landing-title">
     <h1 id="npc-landing-title">Da bancada ao caixa.<br><em>Tudo no NPC SMART.</em></h1>
     <p>Gerencie ordens de serviço, estoque e vendas de aparelhos pelo computador ou celular.</p>
-    <a class="npc-landing-login npc-landing-login--hero" href="/?login=1">Fazer login</a>
+    <div class="npc-landing-hero-actions">
+      <a class="npc-landing-login npc-landing-login--hero" href="/?teste=1">Testar grátis por 5 dias</a>
+      <a class="npc-landing-sign-in" href="/?login=1">Fazer login</a>
+    </div>
     <figure class="npc-landing-devices" aria-label="Prévia ilustrativa do painel do NPC SMART no computador e da venda de aparelhos no celular">
       <div class="npc-landing-orbit" aria-hidden="true"></div>
       <div class="npc-landing-laptop" aria-hidden="true">
@@ -1762,7 +1767,7 @@ let data,session=null,tab='home',subtab='sales',filters={},cart=[],selectedLabel
 let dialogState=null;
 const THEME_KEY='npcsmart.offline.theme.v1';
 const RELEASE_PHONE='5531981172771';
-let pendingUserId=null;
+let pendingUserId=null,trialTimer;
 function preferredTheme(){
  try{const value=localStorage.getItem(THEME_KEY);return ['dark','light','ocean'].includes(value)?value:'dark';}catch{return 'dark';}
 }
@@ -1885,16 +1890,16 @@ async function accessToken(){
  return authTokens.access_token;
 }
 async function api(path,options={}){return rawRequest(path,{...options,token:await accessToken()});}
-function appUser(profile){return {id:profile.id,name:profile.name,username:profile.email,role:profile.role||'admin',active:profile.status==='active',approvalStatus:profile.status==='active'?'approved':profile.status,workspaceId:profile.workspace_id||profile.id,platformAdmin:profile.platform_admin,permissions:profile.permissions||{},version:1};}
+function appUser(profile){return {id:profile.id,name:profile.name,username:profile.email,role:profile.role||'admin',active:['active','trial'].includes(profile.status),approvalStatus:profile.status==='active'?'approved':profile.status,workspaceId:profile.workspace_id||profile.id,platformAdmin:profile.platform_admin,permissions:profile.permissions||{},version:1};}
 function publicWorkspace(user){return user?.workspaceId||user?.id||null;}
 function read(){return clone(data);}
 function cleanPayload(db){const payload=clone(db);delete payload.users;delete payload.workspaces;delete payload.server_owner_id;return payload;}
 function onlineEmpty(){
  const db=seed();for(const key of ['clients','suppliers','products','orders','sales','shifts','ledger','bills'])db[key]=[];
- db.company.name=accountProfile.platform_admin?'NPC SMART':'Minha empresa';db.demo=false;return db;
+ db.company.name=accountProfile.platform_admin?'NPC SMART':accountProfile.permissions?.trial_expires_at?accountProfile.name:'Minha empresa';db.demo=false;return db;
 }
 function resetAccess(){
- session=null;cart=[];filters={};subtab='sales';tab='home';selectedLabels.clear();dialogState=null;pendingUserId=null;teamList=[];
+ clearTimeout(trialTimer);session=null;cart=[];filters={};subtab='sales';tab='home';selectedLabels.clear();dialogState=null;pendingUserId=null;teamList=[];
  closeDialog();$('#modal-body').innerHTML='';$('#print-root').innerHTML='';data=seed();data.users=[];stockShown=true;accountList=[];
 }
 function platformAdmin(user=session){if(!user?.platformAdmin||!user.active)fail('Somente o administrador principal pode gerenciar as liberações.');}
@@ -1906,16 +1911,22 @@ async function loadProfile(){
 }
 async function loadWorkspace(){
  const rows=await api('/rest/v1/rpc/npc_read_workspace',{method:'POST',body:{p_owner:accountProfile.workspace_id||accountProfile.id}});
- if(!rows?.[0]){await loadProfile();if(accountProfile.status!=='active'){renderPending(appUser(accountProfile));}fail('Acesso não liberado para este ambiente.');}
+ if(!rows?.[0]){await loadProfile();if(!appUser(accountProfile).active){renderPending(appUser(accountProfile));}fail('Acesso não liberado para este ambiente.');}
  const row=rows[0],db=Object.keys(row.payload).length?clone(row.payload):onlineEmpty();
  db.users=[appUser(accountProfile)];db.workspaceId=accountProfile.workspace_id||accountProfile.id;db.revision=Number(row.revision);db.updatedAt=row.updated_at;
  validate(db);return {row,db};
 }
 async function loadAccounts(){accountList=accountProfile.platform_admin?((await teamRequest({action:'list_accounts'})).accounts||[]):[];}
-async function loadTeam(){teamList=accountProfile.role==='admin'&&!accountProfile.platform_admin?((await teamRequest({action:'list_members'})).members||[]):[];}
+async function loadTeam(){teamList=accountProfile.role==='admin'&&!accountProfile.platform_admin&&accountProfile.status==='active'?((await teamRequest({action:'list_members'})).members||[]):[];}
 async function enterOnline(){
- await loadProfile();if(accountProfile.status!=='active'){renderPending(appUser(accountProfile));return;}
- session=appUser(accountProfile);const [state]=await Promise.all([loadWorkspace(),loadAccounts(),loadTeam()]);data=state.db;cart=[];filters={};selectedLabels.clear();$('#print-root').innerHTML='';render();
+ await loadProfile();const user=appUser(accountProfile);
+ if(!user.active){renderPending(user);return;}
+ session=user;const [state]=await Promise.all([loadWorkspace(),loadAccounts(),loadTeam()]);data=state.db;cart=[];filters={};selectedLabels.clear();$('#print-root').innerHTML='';render();
+ clearTimeout(trialTimer);
+ if(user.approvalStatus==='trial'){
+  const checkExpiry=()=>enterOnline().catch(error=>{renderAuth();toast(error.message);});
+  trialTimer=setTimeout(checkExpiry,Math.max(1000,Date.parse(user.permissions.trial_expires_at)-Date.now()));
+ }
 }
 async function transaction(fn){
  const execute=async()=>{
@@ -2055,18 +2066,19 @@ function clientSnapshot(db,value){
 function renderAuth(mode='login'){
  resetAccess();
  const registering=mode==='register',recovering=mode==='recover',changing=mode==='password',loggingIn=mode==='login';
- const title=registering?'Criar conta':recovering?'Recuperar senha':changing?'Criar nova senha':'Entrar no sistema';
+ const title=registering?'Teste o NPC SMART grátis por 5 dias':recovering?'Recuperar senha':changing?'Criar nova senha':'Entrar no sistema';
  const passwordField=field('password',changing?'Nova senha':'Senha','','password','id="entry-password" required '+(loggingIn?'':'minlength="8" ')+'autocomplete="'+(registering||changing?'new-password':'current-password')+'"');
  $('#app').innerHTML='<main class="auth-wrap auth-wrap--entry"><section class="auth-card auth-card--entry"><div class="brand">NPC SMART<small>Gestão online para empresas</small></div><h1>'+title+'</h1>'+
- (registering?'<p class="help">Confirme seu e-mail e solicite a liberação pelo WhatsApp. Sua empresa começa com um ambiente vazio.</p>':'')+
+ (registering?'<ul class="trial-features"><li>Cadastre aparelhos e acompanhe o estoque.</li><li>Registre vendas e movimentações de caixa.</li><li>Crie e acompanhe ordens de serviço.</li></ul>':'')+
  '<form data-form="'+(registering?'register':recovering?'recover':changing?'password':'login')+'">'+
- (registering?field('name','Seu nome','','text','required maxlength="100" autocomplete="name"'):'')+
+ (registering?field('name','Nome da empresa','','text','required maxlength="100" autocomplete="organization"'):'')+
  (!changing?field('email','E-mail','','email','required autocomplete="email" maxlength="254"'):'')+
  (recovering?'':'<div class="auth-password">'+passwordField+button('toggle-password','Mostrar')+'</div>')+
- (loggingIn?'<button class="auth-link auth-recover auth-text-button" type="button" data-action="show-recover">Esqueci minha senha</button>':'')+
+ (loggingIn?'<a class="auth-link auth-recover" href="/?login=1&amp;recuperar=1">Esqueci minha senha</a>':'')+
  (registering||changing?field('confirmation','Confirmar senha','','password','required minlength="8" autocomplete="new-password"'):'')+
- '<button type="submit" class="primary">'+(registering?'Criar conta':recovering?'Enviar recuperação':changing?'Salvar nova senha':'Entrar')+'</button><p class="form-error" role="alert"></p></form>'+
- '<div class="auth-footer">'+(loggingIn?'<button class="auth-link auth-text-button" type="button" data-action="show-register">Criar conta</button>':button('show-login',registering?'Já tem conta? Entrar':'Voltar para entrar','','auth-link auth-text-button'))+
+ '<button type="submit" class="primary">'+(registering?'Começar meu teste grátis':recovering?'Enviar recuperação':changing?'Salvar nova senha':'Entrar')+'</button><p class="form-error" role="alert"></p></form>'+
+ (registering?'<p class="trial-terms">Sem cartão e sem cobrança automática. Os cinco dias começam após a confirmação do e-mail. A gestão de acessos de vendedores fica disponível nos planos pagos.</p>':'')+
+ '<div class="auth-footer">'+(loggingIn?'<a class="auth-link" href="/?teste=1">Testar grátis por 5 dias</a>':changing?button('show-login','Voltar para entrar'):'<a class="auth-link" href="/?login=1">'+(registering?'Já tem conta? Entrar':'Voltar para entrar')+'</a>')+
  button('auth-theme','Alterar tema')+'</div>'+
  (loggingIn?'<a class="release-link" href="https://wa.me/'+RELEASE_PHONE+'?text='+encodeURIComponent('Olá! Preciso de suporte no sistema NPC SMART.')+'" target="_blank" rel="noopener noreferrer">Fale conosco pelo WhatsApp</a>':'')+
  '</section></main>';
@@ -2075,6 +2087,11 @@ function renderAuth(mode='login'){
 }
 function renderPending(user){
  resetAccess();pendingUserId=user.id;
+ if(user.approvalStatus==='trial_expired'){
+  const contact='https://wa.me/'+RELEASE_PHONE+'?text='+encodeURIComponent('Olá! Meu teste do NPC SMART terminou e gostaria de contratar um plano. Cadastro: '+user.username);
+  $('#app').innerHTML='<main class="auth-wrap"><section class="auth-card"><div class="brand">NPC SMART</div><h2>Seu teste de 5 dias terminou</h2><p>Fale com a gente para contratar um plano e voltar a acessar os dados da sua empresa.</p><a class="release-link" href="'+esc(contact)+'" target="_blank" rel="noopener noreferrer">Contratar pelo WhatsApp</a>'+button('check-release','Verificar meu acesso')+button('show-login','Voltar para entrar')+'</section></main>';
+  return;
+ }
  const blocked=user.approvalStatus==='blocked';
  $('#app').innerHTML='<div class="auth-wrap"><section class="auth-card"><div class="brand">NPC SMART<small>Gestão online</small></div><h2>'+(blocked?'Acesso bloqueado':'Aguardando liberação')+'</h2><p>Olá, '+esc(user.name)+'. Seu cadastro é '+esc(user.username)+'.</p><p>'+(blocked?'Entre em contato com Brendo para verificar seu acesso.':'Solicite a liberação pelo WhatsApp. Após a aprovação, você poderá acessar sua empresa em qualquer dispositivo.')+'</p><a class="release-link" href="'+esc(releaseUrl(user))+'" target="_blank" rel="noopener noreferrer">Solicitar liberação no WhatsApp</a><div class="auth-links">'+button('check-release','Verificar liberação')+button('show-login','Voltar para entrar')+button('auth-theme','Alterar tema')+'</div><p class="help">Nome, e-mail e código do cadastro serão incluídos na mensagem. Sua senha não é enviada.</p></section></div>';
 }
@@ -2103,7 +2120,8 @@ function renderMain(restore=null){
  requireFeature(tab);
  const title=nav.find(n=>n[0]===tab)?.[2]||'NPC SMART';
  const extra=tab==='devices'?button('device-new','Nova venda de aparelho','','primary'):tab==='orders'?button('new-order','Nova OS','','primary'):['products','clients'].includes(tab)?button('new-record','Cadastrar','','primary'):'';
- $('#main').innerHTML='<div class="section-head"><h2>'+esc(tab==='orders'?'Ordens de Serviço':title)+'</h2>'+extra+'</div>'+views[tab]();
+ $('#main').innerHTML='<div class="section-head"><h2>'+esc(tab==='orders'?'Ordens de Serviço':title)+'</h2>'+extra+'</div>'+
+ (session.approvalStatus==='trial'?'<p class="notice trial-banner">Seu teste grátis termina em '+esc(new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(session.permissions.trial_expires_at)))+'.</p>':'')+views[tab]();
  if(restore){const target=$('[data-filter="'+restore.key+'"]');target?.focus();if(target&&typeof target.setSelectionRange==='function')target.setSelectionRange(restore.pos,restore.pos);}
 }
 const query=(key=tab)=>(filters[key]||'').trim().toLocaleLowerCase('pt-BR');
@@ -2876,12 +2894,12 @@ actions['auth-theme']=()=>openDialog('Escolher tema',appearancePanel()+button('c
 submits.login=async form=>{try{await emailLogin(form);}catch(error){throw authFormError(error);}};
 submits.register=async form=>{
  const values=new FormData(form),password=String(values.get('password')),name=String(values.get('name')||'').trim(),email=String(values.get('email')||'').trim();
- if(!name||password.length<8)fail('Informe o nome e uma senha com pelo menos oito caracteres.');
+ if(!name||password.length<8)fail('Informe o nome da empresa e uma senha com pelo menos oito caracteres.');
  if(password!==values.get('confirmation'))fail('As senhas não conferem.');
  let result;
- try{result=await rawRequest('/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+'/'),{method:'POST',body:{email,password,data:{name}}});}catch(error){throw authFormError(error);}
+ try{result=await rawRequest('/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+'/'),{method:'POST',body:{email,password,data:{name,trial:true}}});}catch(error){throw authFormError(error);}
  if(result.access_token){storeTokens(result);await enterOnline();return;}
- $('#app').innerHTML='<div class="auth-wrap"><section class="auth-card"><div class="brand">NPC SMART</div><h2>Confira seu e-mail</h2><p>Se o cadastro estiver disponível, você receberá uma mensagem de confirmação em '+esc(email)+'. Abra o link e volte para entrar.</p><p class="help">Depois de confirmar o e-mail, entre para solicitar a liberação pelo WhatsApp. Se já tem conta, use a opção de entrar ou recuperar senha.</p>'+button('show-login','Voltar para entrar')+button('auth-theme','Alterar tema')+'</section></div>';
+ $('#app').innerHTML='<div class="auth-wrap"><section class="auth-card"><div class="brand">NPC SMART</div><h2>Confira seu e-mail</h2><p>Se o cadastro estiver disponível, você receberá uma mensagem de confirmação em '+esc(email)+'. Confirme seu e-mail pelo link para ativar os cinco dias grátis.</p><p class="help">Se já tem conta, use a opção de entrar ou recuperar senha.</p>'+button('show-login','Voltar para entrar')+button('auth-theme','Alterar tema')+'</section></div>';
 };
 submits.recover=async form=>{
  const email=String(new FormData(form).get('email')||'').trim();
@@ -2893,14 +2911,12 @@ submits.password=async form=>{
  if(password.length<8||password!==values.get('confirmation'))fail('Use pelo menos oito caracteres e confirme a mesma senha.');
  await api('/auth/v1/user',{method:'PUT',body:{password}});await authExit();toast('Senha atualizada. Entre novamente.');
 };
-actions['show-register']=()=>renderAuth('register');
 actions['toggle-password']=el=>{
  const input=$('#entry-password'),show=input.type==='password';
  input.type=show?'text':'password';
  el.textContent=show?'Ocultar':'Mostrar';
 };
 actions['show-login']=authExit;
-actions['show-recover']=()=>renderAuth('recover');
 actions.lock=authExit;actions.logout=async()=>{if(confirm('Sair do sistema?'))await authExit();};
 actions['check-release']=enterOnline;
 actions['refresh-online']=async()=>{
@@ -2945,7 +2961,8 @@ function tenantSettings(markup){
  const marker='<hr style="border:0;border-top:1px solid #333;margin:22px 0">',at=markup.indexOf(marker);
  let result=at<0?markup:markup.slice(0,at)+'</section></div>';
  result+='<div class="notice">Ambiente independente de '+esc(session.name)+'. Seus dados são protegidos no servidor e não ficam disponíveis para outras empresas.</div>';
- if(!session.platformAdmin)result+='<section class="panel"><h3 class="panel-title">Acessos de vendedores</h3><p>Escolha quais áreas cada vendedor pode abrir. A permissão também é aplicada no servidor.</p>'+button('new-user','Criar acesso secundário','','primary')+table(['Nome','E-mail','Acesso','Situação','Ações'],teamList.map(m=>[esc(m.name),esc(m.email),nav.filter(([key])=>m.permissions?.[key]&&key!=='settings').map(([, ,label])=>label).join(', '),m.active?'Ativo':'Bloqueado',button('edit-user','Alterar',m.id,'small')+' '+button('delete-user','Excluir',m.id,'small danger')]))+'</section>';
+ if(session.approvalStatus==='trial')result+='<p class="notice">Os acessos de vendedores ficam disponíveis após a contratação de um plano.</p>';
+ else if(!session.platformAdmin)result+='<section class="panel"><h3 class="panel-title">Acessos de vendedores</h3><p>Escolha quais áreas cada vendedor pode abrir. A permissão também é aplicada no servidor.</p>'+button('new-user','Criar acesso secundário','','primary')+table(['Nome','E-mail','Acesso','Situação','Ações'],teamList.map(m=>[esc(m.name),esc(m.email),nav.filter(([key])=>m.permissions?.[key]&&key!=='settings').map(([, ,label])=>label).join(', '),m.active?'Ativo':'Bloqueado',button('edit-user','Alterar',m.id,'small')+' '+button('delete-user','Excluir',m.id,'small danger')]))+'</section>';
  if(session.platformAdmin)result+='<section class="panel"><h3 class="panel-title">Contas de clientes</h3>'+button('refresh-accounts','Atualizar cadastros')+table(['Nome','E-mail','Situação','Ações'],accountList.map(a=>[esc(a.name),esc(a.email),a.status==='active'?'Ativo':a.status==='pending'?'Pendente':'Bloqueado',a.platform_admin?'Administrador principal':(a.status!=='active'?button('approve-user','Liberar acesso',a.id,'small primary'):'')+' '+button('edit-user','Alterar dados',a.id,'small')+' '+button('delete-user','Excluir conta',a.id,'small danger')+(a.status!=='blocked'?' '+button('block-user','Bloquear acesso',a.id,'small danger'):'')]))+'</section>';
  return result;
 }
@@ -2964,7 +2981,7 @@ async function openTrackingPage(token){
 }
 async function bootOnline(){
  data=seed();data.users=[];applyTheme();
- if(new URLSearchParams(location.search).get('login')==='1'){renderAuth();return;}
+ const query=new URLSearchParams(location.search);
  try{
   const fragment=new URLSearchParams(location.hash.slice(1));
   if(fragment.get('acompanhar')){await openTrackingPage(fragment.get('acompanhar'));return;}
@@ -2974,9 +2991,12 @@ async function bootOnline(){
    storeTokens({access_token:fragment.get('access_token'),refresh_token:fragment.get('refresh_token'),expires_in:Number(fragment.get('expires_in')||3600)});
    const recovery=['recovery','invite'].includes(fragment.get('type'));history.replaceState(null,'',location.pathname);
    await api('/auth/v1/user');if(recovery){renderAuth('password');return;}
-  }else{try{authTokens=JSON.parse(sessionStorage.getItem(AUTH_KEY)||'null');}catch{authTokens=null;}}
+  }else{
+   if(query.get('teste')==='1'){renderAuth('register');return;}
+   if(query.get('login')==='1'){renderAuth(query.get('recuperar')==='1'?'recover':'login');return;}
+   try{authTokens=JSON.parse(sessionStorage.getItem(AUTH_KEY)||'null');}catch{authTokens=null;}
+  }
   if(authTokens)await enterOnline();
-  else if(new URLSearchParams(location.search).get('login')==='1')renderAuth();
  }catch(error){storeTokens(null);renderAuth();toast(authFormError(error).message);}
 }
 window.addEventListener('online',()=>toast('Conexão restabelecida. Use Atualizar para carregar os dados do servidor.'));
