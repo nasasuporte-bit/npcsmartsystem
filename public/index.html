@@ -2061,6 +2061,11 @@ const query=(key=tab)=>(filters[key]||'').trim().toLocaleLowerCase('pt-BR');
 const match=(row,keys,term)=>!term||keys.some(k=>String(row[k]??'').toLocaleLowerCase('pt-BR').includes(term));
 function searchBox(key,placeholder){return '<input class="search" type="search" data-filter="'+key+'" value="'+esc(filters[key]||'')+'" placeholder="'+esc(placeholder)+'" aria-label="'+esc(placeholder)+'">';}
 const canSeeDashboardModule=key=>Boolean(session.platformAdmin||session.permissions?.[key]);
+function importedSalePayments(from,to){
+ if(!session?.platformAdmin && session?.role!=='admin' && !session?.permissions?.cash)return [];
+ return data.ledger.filter(entry=>entry.legacyType==='sale_payment' && !entry.saleId && entry.date>=from && entry.date<=to)
+  .sort((a,b)=>b.date.localeCompare(a.date));
+}
 function homeDashboard(){
  const days=Number(filters.homeDays)||1;
  const end=new Date(today()+'T12:00:00Z');
@@ -2142,7 +2147,16 @@ const views={
   let list=data.sales.filter(s=>s.date>=from&&s.date<=to);
   const summary=Object.keys(methods).filter(m=>m!=='debt').map(m=>metric(methods[m],money(sum(data.ledger.filter(e=>e.date>=from&&e.date<=to&&e.method===m&&e.saleId).map(e=>e.amount))))).join('');
   let content='';
-  if(subtab==='sales')content='<div class="summary">'+metric('Vendas líquidas do período',money(sum(list.map(s=>s.total-s.cancelled))))+summary+'</div>'+table(['Venda','Data','Cliente','Forma de pagamento','Valor líquido','Em aberto',''],list.slice().reverse().map(s=>[String(s.number),date(s.date),esc(s.client.name),s.payments.map(p=>esc(methods[p.method])+': '+money(p.amount)).join('<br>'),money(s.total-s.cancelled),money(outstanding(s)),button('receipt','Ver cupom',s.id,'small')]));
+  if(subtab==='sales')content='<div class="summary">'+metric('Vendas líquidas com cupom',money(sum(list.map(s=>s.total-s.cancelled))))+summary+'</div>'+table(['Venda','Data','Cliente','Forma de pagamento','Valor líquido','Em aberto',''],list.slice().reverse().map(s=>[String(s.number),date(s.date),esc(s.client.name),s.payments.map(p=>esc(methods[p.method])+': '+money(p.amount)).join('<br>'),money(s.total-s.cancelled),money(outstanding(s)),button('receipt','Ver cupom',s.id,'small')]));
+  if(subtab==='sales'){
+   const history=importedSalePayments(from,to);
+   if(history.length){
+    content+='<section class="panel"><h3>Pagamentos de vendas do histórico importado</h3><p class="help">Cada linha corresponde a um pagamento ou estorno registrado no caixa antigo.</p>'+
+     table(['Data','Venda de origem','Forma','Valor'],history.map(entry=>[
+      date(entry.date),esc(entry.legacySaleNumber||'—'),esc(methods[entry.method]||entry.method),money(entry.amount)
+     ]))+'</section>';
+   }
+  }
   if(subtab==='products')content=views.products(true);
   if(subtab==='items')content=table(['Venda','Data','Produto','Qtde líquida','Total líquido'],list.flatMap(s=>s.lines.map(l=>[String(s.number),date(s.date),esc(l.name),number(l.qty-l.cancelQty),money(l.net-Math.floor(l.net*l.cancelQty/l.qty))])));
   if(subtab==='orders')content=table(['OS','Entrada','Cliente','Aparelho','Situação','Total',''],data.orders.filter(o=>o.opened>=from&&o.opened<=to).map(o=>[esc(o.number),date(o.opened),esc(o.client.name),esc(o.device),badge(o.status),money(orderTotal(o)),button('edit-order','Abrir',o.id,'small')]));
@@ -2627,7 +2641,7 @@ const actions={
  subtab(el){subtab=el.dataset.id;renderMain();},
  'export-sales'(){
   requireFeature('queries');const from=filters.from||today().slice(0,7)+'-01',to=filters.to||today();
-  csv([['Venda','Data','Cliente','Forma','Tipo de lançamento','Valor (R$)'],...data.sales.flatMap(s=>s.payments.filter(p=>p.date>=from&&p.date<=to).map(p=>[s.number,p.date,s.client.name,methods[p.method],p.kind==='initial'?'Pagamento inicial':'Recebimento',dec(p.amount)])),...data.sales.flatMap(s=>s.refunds.filter(p=>p.date>=from&&p.date<=to).map(p=>[s.number,p.date,s.client.name,methods[p.method],'Estorno',dec(-p.amount)]))],'pagamentos-'+today()+'.csv');
+  csv([['Venda','Data','Cliente','Forma','Tipo de lançamento','Valor (R$)'],...data.sales.flatMap(s=>s.payments.filter(p=>p.date>=from&&p.date<=to).map(p=>[s.number,p.date,s.client.name,methods[p.method],p.kind==='initial'?'Pagamento inicial':'Recebimento',dec(p.amount)])),...data.sales.flatMap(s=>s.refunds.filter(p=>p.date>=from&&p.date<=to).map(p=>[s.number,p.date,s.client.name,methods[p.method],'Estorno',dec(-p.amount)])),...importedSalePayments(from,to).map(e=>[e.legacySaleNumber||'',e.date,'',methods[e.method]||e.method,e.amount<0?'Estorno importado':'Pagamento importado',dec(e.amount)])],'pagamentos-'+today()+'.csv');
  },
  receipt(el){receipt(el.dataset.id);},
  'print-receipt'(el){
